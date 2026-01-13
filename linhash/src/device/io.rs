@@ -26,16 +26,8 @@ impl IO {
         Ok(())
     }
 
-    pub fn write(&self, buf: &[u8], offset: u64) -> Result<()> {
-        let n = buf.len();
-        dbg!(&n);
-
-        let mut io_buf = PageIOBuffer::with_capacity(n);
-        io_buf.extend_from_slice(&buf);
-        // The buffer size should be multiple of 4096 bytes.
-        io_buf.resize(4096, 0);
-
-        let io_vec = [rustix::io::IoSlice::new(io_buf.as_mut_slice())];
+    pub fn write(&self, buf: &PageIOBuffer, offset: u64) -> Result<()> {
+        let io_vec = [rustix::io::IoSlice::new(buf.as_slice())];
         pwritev2(&self.fd, &io_vec, offset, ReadWriteFlags::empty())?;
 
         Ok(())
@@ -56,15 +48,16 @@ mod tests {
         let f = tempfile::NamedTempFile::new().unwrap();
         let io = IO::new(f.path()).unwrap();
 
-        let write_buf = vec![1u8; 4096];
+        let mut write_buf = PageIOBuffer::new();
+        write_buf.resize(4096, 1);
         io.write(&write_buf, 3 * 4096).unwrap();
 
         let mut read_buf = PageIOBuffer::with_capacity(4096);
         read_buf.resize(4096, 0);
-        assert_ne!(write_buf, read_buf.as_slice());
+        assert_ne!(write_buf.as_slice(), read_buf.as_slice());
 
         io.read(&mut read_buf, 3 * 4096).unwrap();
 
-        assert_eq!(write_buf, read_buf.as_slice());
+        assert_eq!(write_buf.as_slice(), read_buf.as_slice());
     }
 }

@@ -12,17 +12,18 @@ impl Device {
         Ok(Self { io: IO::new(path)? })
     }
 
-    fn into_data(page: Page) -> Vec<u8> {
+    fn into_data(page: Page) -> PageIOBuffer {
         let data = encode_page(&page);
         assert!(data.len() <= 4088);
 
         let crc = crc32fast::hash(&data);
         let data_len = data.len() as u32;
 
-        let mut out = Vec::with_capacity(8 + data.len());
+        let mut out = PageIOBuffer::with_capacity(8 + data.len());
         out.extend_from_slice(&crc.to_le_bytes());
         out.extend_from_slice(&data_len.to_le_bytes());
         out.extend_from_slice(&data);
+        out.resize(4096, 0);
 
         out
     }
