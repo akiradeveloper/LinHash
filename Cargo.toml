@@ -3,4 +3,5 @@ resolver = "2"
 members = [
   "linhash",
   "map-test-generator",
+  "benchmark",
 ]
