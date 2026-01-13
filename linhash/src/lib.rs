@@ -148,7 +148,10 @@ impl LinHash {
 
     pub fn insert(&mut self, key: Vec<u8>, value: Vec<u8>) -> Result<Option<Vec<u8>>> {
         // If the existence of the key is confirmed, insertion will be updating.
+        #[cfg(feature = "delete")]
         let confirmed = op::Get { db: self }.exec(&key)?.is_some();
+        #[cfg(not(feature = "delete"))]
+        let confirmed = false;
 
         let old = op::Insert { db: self }.exec(key, value, confirmed)?;
 
@@ -159,6 +162,7 @@ impl LinHash {
         Ok(old)
     }
 
+    #[cfg(feature = "delete")]
     pub fn delete(&mut self, key: &[u8]) -> Result<Option<Vec<u8>>> {
         op::Delete { db: self }.exec(key)
     }

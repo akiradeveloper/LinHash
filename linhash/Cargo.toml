@@ -14,6 +14,7 @@ tempfile = "3.24"
 map-test-generator = { path = "../map-test-generator" }
 
 [features]
-default = ["hash"]
+default = ["hash", "delete"]
 hash = ["dep:xxhash-rust"]
+delete = []
 nohash = []
