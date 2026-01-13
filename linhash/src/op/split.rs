@@ -43,7 +43,7 @@ impl Split<'_> {
 
         let mut cur_page = self.db.main_pages.read_page(split_id)?.unwrap();
         loop {
-            for (k, v) in cur_page.kv_pairs.drain() {
+            for (k, v) in cur_page.kv_pairs {
                 out.push((k, v));
             }
 

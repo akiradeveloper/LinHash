@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+#[derive(Debug)]
 enum OpChoice {
     GetMiss,
     GetHit,
