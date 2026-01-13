@@ -32,7 +32,7 @@ pub struct Device {
 impl Device {
     pub fn new(path: &Path) -> Result<Self> {
         let f = File::options()
-         .read(true)
+            .read(true)
             .write(true)
             .create(true)
             .open(path)?;

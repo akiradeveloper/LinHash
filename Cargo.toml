@@ -1,18 +1,6 @@
-[package]
-name = "linhash"
-version = "0.1.0"
-edition = "2024"
-
-[dependencies]
-crc32fast = "1.5"
-rkyv = "0.8"
-thiserror = "2"
-xxhash-rust = { version = "0.8.15", features = ["xxh3"], optional = true }
-
-[dev-dependencies]
-tempfile = "3.24"
-
-[features]
-default = ["hash"]
-hash = ["dep:xxhash-rust"]
-nohash = []
+[workspace]
+resolver = "2"
+members = [
+  "linhash",
+  "map-test-generator",
+]
