@@ -78,12 +78,12 @@ pub struct LinHash {
 }
 
 impl LinHash {
-    pub fn new(main_page_file: &Path, overflow_page_file: &Path) -> Result<Self> {
+    pub fn new(dir: &Path) -> Result<Self> {
         let main_page_file = File::options()
             .read(true)
             .write(true)
             .create(true)
-            .open(main_page_file)?;
+            .open(dir.join("main"))?;
 
         let main_pages = Device::new(main_page_file);
 
@@ -91,7 +91,7 @@ impl LinHash {
             .read(true)
             .write(true)
             .create(true)
-            .open(overflow_page_file)?;
+            .open(dir.join("overflow"))?;
 
         let overflow_pages = Device::new(overflow_page_file);
 
@@ -108,8 +108,8 @@ impl LinHash {
         })
     }
 
-    pub fn open(main_page_file: &Path, overflow_page_file: &Path) -> Result<Self> {
-        let mut db = Self::new(main_page_file, overflow_page_file)?;
+    pub fn open(dir: &Path) -> Result<Self> {
+        let mut db = Self::new(dir)?;
 
         let n_main_pages = op::Restore { db: &mut db }.exec()?;
 

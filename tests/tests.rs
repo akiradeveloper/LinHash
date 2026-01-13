@@ -6,9 +6,8 @@ fn vec(i: u64) -> Vec<u8> {
 
 #[test]
 fn test_insert() {
-    let main = tempfile::NamedTempFile::new().unwrap();
-    let overflow = tempfile::NamedTempFile::new().unwrap();
-    let mut fh = LinHash::open(main.path(), overflow.path()).unwrap();
+    let dir = tempfile::tempdir().unwrap();
+    let mut fh = LinHash::open(dir.path()).unwrap();
 
     let n = 10000;
     let range = 0..n;
@@ -22,9 +21,8 @@ fn test_insert() {
 
 #[test]
 fn test_get() {
-    let main = tempfile::NamedTempFile::new().unwrap();
-    let overflow = tempfile::NamedTempFile::new().unwrap();
-    let mut fh = LinHash::open(main.path(), overflow.path()).unwrap();
+    let dir = tempfile::tempdir().unwrap();
+    let mut fh = LinHash::open(dir.path()).unwrap();
 
     let n = 10000;
     let range = 0..n;
@@ -43,9 +41,8 @@ fn test_get() {
 
 #[test]
 fn test_update() {
-    let main = tempfile::NamedTempFile::new().unwrap();
-    let overflow = tempfile::NamedTempFile::new().unwrap();
-    let mut fh = LinHash::open(main.path(), overflow.path()).unwrap();
+    let dir = tempfile::tempdir().unwrap();
+    let mut fh = LinHash::open(dir.path()).unwrap();
 
     let n = 10000;
     let range = 0..n;
@@ -68,9 +65,8 @@ fn test_update() {
 
 #[test]
 fn test_delete() {
-    let main = tempfile::NamedTempFile::new().unwrap();
-    let overflow = tempfile::NamedTempFile::new().unwrap();
-    let mut fh = LinHash::open(main.path(), overflow.path()).unwrap();
+    let dir = tempfile::tempdir().unwrap();
+    let mut fh = LinHash::open(dir.path()).unwrap();
 
     let n = 10000;
     let range = 0..n;
@@ -94,9 +90,8 @@ fn test_delete() {
 
 #[test]
 fn test_restore() {
-    let main = tempfile::NamedTempFile::new().unwrap();
-    let overflow = tempfile::NamedTempFile::new().unwrap();
-    let mut fh = LinHash::open(main.path(), overflow.path()).unwrap();
+    let dir = tempfile::tempdir().unwrap();
+    let mut fh = LinHash::open(dir.path()).unwrap();
 
     let n = 10000;
     let range = 0..n;
@@ -105,7 +100,7 @@ fn test_restore() {
         fh.insert(vec(i), vec(i)).unwrap();
     }
 
-    let fh = LinHash::open(main.path(), overflow.path()).unwrap();
+    let fh = LinHash::open(dir.path()).unwrap();
 
     assert_eq!(fh.len(), n as u64);
 
