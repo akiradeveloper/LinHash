@@ -5,7 +5,14 @@ struct IO {
 }
 
 impl IO {
-    fn new(f: File) -> Self {
+    fn new(p: &Path) -> Self {
+        let f = File::options()
+            .read(true)
+            .write(true)
+            .create(true)
+            .open(p)
+            .unwrap();
+
         Self { f }
     }
 
@@ -31,12 +38,7 @@ pub struct Device {
 
 impl Device {
     pub fn new(path: &Path) -> Result<Self> {
-        let f = File::options()
-            .read(true)
-            .write(true)
-            .create(true)
-            .open(path)?;
-        Ok(Self { io: IO::new(f) })
+        Ok(Self { io: IO::new(path) })
     }
 
     fn into_data(page: Page) -> Vec<u8> {
