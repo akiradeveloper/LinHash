@@ -78,7 +78,7 @@ pub struct LinHash {
 }
 
 impl LinHash {
-    pub fn new(dir: &Path) -> Result<Self> {
+    fn new(dir: &Path) -> Result<Self> {
         let main_pages = Device::new(&dir.join("main"))?;
         let overflow_pages = Device::new(&dir.join("overflow"))?;
 

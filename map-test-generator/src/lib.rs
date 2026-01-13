@@ -219,7 +219,7 @@ mod tests {
             },
         );
         for _ in 0..10000 {
-            let op = g.next();
+            let _op = g.next();
         }
     }
 }
