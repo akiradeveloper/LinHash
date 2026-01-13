@@ -89,6 +89,55 @@ fn test_delete() {
 }
 
 #[test]
+fn test_insert_half_delete_get() {
+    let dir = tempfile::tempdir().unwrap();
+    let mut fh = LinHash::open(dir.path()).unwrap();
+
+    let n = 10000;
+
+    for i in 0..n {
+        fh.insert(vec(i), vec(i)).unwrap();
+    }
+
+    for i in 0..n/2 {
+        let removed = fh.delete(&vec(i)).unwrap();
+        assert_eq!(removed, Some(vec(i)));
+    }
+
+    for i in 0..n/2 {
+        let v = fh.get(&vec(i)).unwrap();
+        assert!(v.is_none());
+    }
+
+    for i in n/2..n {
+        let e = fh.get(&vec(i)).unwrap();
+        assert_eq!(e, Some(vec(i)));
+    }
+}
+
+#[test]
+fn test_insert_half_delete_update() {
+    let dir = tempfile::tempdir().unwrap();
+    let mut fh = LinHash::open(dir.path()).unwrap();
+
+    let n = 10000;
+
+    for i in 0..n {
+        fh.insert(vec(i), vec(i)).unwrap();
+    }
+
+    for i in 0..n/2 {
+        let removed = fh.delete(&vec(i)).unwrap();
+        assert_eq!(removed, Some(vec(i)));
+    }
+
+    for i in n/2..n {
+        let old = fh.insert(vec(i), vec(i+1)).unwrap();
+        assert_eq!(old, Some(vec(i)));
+    }
+}
+
+#[test]
 fn test_restore() {
     let dir = tempfile::tempdir().unwrap();
     let mut fh = LinHash::open(dir.path()).unwrap();
