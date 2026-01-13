@@ -6,4 +6,4 @@ Linear Hashing implementation in Rust.
 
 | flag | default | description |
 | -- | -- | -- |
-| hash | off | By default, 64 bit part from give key is used as hash to eliminate the cost of hashing. By enabling this, hashing is used so it can accept any keys. |
+| hash | on | If disabled, 64 bit from the given key is taken as a hash, eliminating the cost of hashing. |
