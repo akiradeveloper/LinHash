@@ -1,7 +1,7 @@
 use super::*;
 
 pub struct Delete<'a> {
-    pub db: &'a mut ForeverHash,
+    pub db: &'a mut LinHash,
 }
 
 impl Delete<'_> {

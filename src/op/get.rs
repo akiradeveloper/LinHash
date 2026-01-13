@@ -1,7 +1,7 @@
 use super::*;
 
 pub struct Get<'a> {
-    pub db: &'a ForeverHash,
+    pub db: &'a LinHash,
 }
 
 impl Get<'_> {

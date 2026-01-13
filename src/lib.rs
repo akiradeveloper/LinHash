@@ -65,7 +65,7 @@ enum PageId {
     Overflow(u64),
 }
 
-pub struct ForeverHash {
+pub struct LinHash {
     main_pages: Device,
     main_base_level: u8,
     next_split_main_page_id: u64,
@@ -77,7 +77,7 @@ pub struct ForeverHash {
     max_kv_per_page: Option<u8>,
 }
 
-impl ForeverHash {
+impl LinHash {
     pub fn new(main_page_file: &Path, overflow_page_file: &Path) -> Result<Self> {
         let main_page_file = File::options()
             .read(true)
