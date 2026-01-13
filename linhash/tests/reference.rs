@@ -21,7 +21,7 @@ fn reference_test() {
         },
     );
 
-    for _ in 0..10000 {
+    for _ in 0..50000 {
         let op = g.next();
         match op {
             Op::Get(k) => {

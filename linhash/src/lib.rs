@@ -147,7 +147,10 @@ impl LinHash {
     }
 
     pub fn insert(&mut self, key: Vec<u8>, value: Vec<u8>) -> Result<Option<Vec<u8>>> {
-        let old = op::Insert { db: self }.exec(key, value)?;
+        // If the existence of the key is confirmed, insertion will be updating.
+        let confirmed = op::Get { db: self }.exec(&key)?.is_some();
+
+        let old = op::Insert { db: self }.exec(key, value, confirmed)?;
 
         if self.load_factor() > 0.8 {
             op::Split { db: self }.exec().ok();

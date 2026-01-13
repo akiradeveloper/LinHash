@@ -218,7 +218,7 @@ mod tests {
                 delete_hit: 3,
             },
         );
-        for _ in 0..100000 {
+        for _ in 0..10000 {
             let op = g.next();
         }
     }

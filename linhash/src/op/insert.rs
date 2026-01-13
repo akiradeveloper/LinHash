@@ -5,7 +5,7 @@ pub struct Insert<'a> {
 }
 
 impl Insert<'_> {
-    pub fn exec(self, key: Vec<u8>, value: Vec<u8>) -> Result<Option<Vec<u8>>> {
+    pub fn exec(self, key: Vec<u8>, value: Vec<u8>, confirmed: bool) -> Result<Option<Vec<u8>>> {
         // The `max_kv_per_page` is a fixed value so the size of key and value must be fixed.
         if self.db.max_kv_per_page.is_none() {
             self.db.max_kv_per_page = Some(calc_max_kv_per_page(key.len(), value.len()));
@@ -16,9 +16,14 @@ impl Insert<'_> {
         let mut cur_page = (PageId::Main(b), self.db.main_pages.read_page(b)?.unwrap());
 
         loop {
-            if cur_page.1.contains(&key)
-                || cur_page.1.kv_pairs.len() < self.db.max_kv_per_page.unwrap() as usize
-            {
+            let overwrite_page = if confirmed {
+                cur_page.1.contains(&key)
+            } else {
+                cur_page.1.contains(&key)
+                    || cur_page.1.kv_pairs.len() < self.db.max_kv_per_page.unwrap() as usize
+            };
+
+            if overwrite_page {
                 let old = cur_page.1.insert(key, value);
                 match cur_page.0 {
                     PageId::Main(b) => self.db.main_pages.write_page_atomic(b, cur_page.1)?,
