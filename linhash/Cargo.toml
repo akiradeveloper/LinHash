@@ -2,6 +2,13 @@
 name = "linhash"
 version = "0.1.0"
 edition = "2024"
+authors = ["Akira Hayakawa <ruby.wktk@gmail.com>"]
+license = "MIT"
+description = "Linear Hashing implementation."
+repository = "https://github.com/akiradeveloper/LinHash"
+readme = "../README.md"
+categories = ["algorithms", "data-structures", "database-implementations"]
+keywords = ["linear-hashing", "hash-table", "hashmap"]
 
 [dependencies]
 crc32fast = "1.5"
