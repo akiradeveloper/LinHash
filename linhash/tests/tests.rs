@@ -5,6 +5,12 @@ fn vec(i: u64) -> Vec<u8> {
 }
 
 #[test]
+fn test_open() {
+    let dir = tempfile::tempdir().unwrap();
+    let _fh = LinHash::open(dir.path()).unwrap();
+}
+
+#[test]
 fn test_insert() {
     let dir = tempfile::tempdir().unwrap();
     let mut fh = LinHash::open(dir.path()).unwrap();

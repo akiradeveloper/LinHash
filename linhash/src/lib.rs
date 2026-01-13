@@ -1,8 +1,5 @@
-use rkyv::util::AlignedVec;
 use std::collections::{BTreeMap, HashMap, VecDeque};
-use std::fs::File;
 use std::ops::Range;
-use std::os::unix::fs::FileExt;
 use std::path::Path;
 
 mod error;
@@ -16,7 +13,7 @@ mod op;
 mod page;
 use page::*;
 
-type PageIOBuffer = AlignedVec<4096>;
+type PageIOBuffer = rkyv::util::AlignedVec<4096>;
 
 #[derive(rkyv::Archive, rkyv::Serialize, rkyv::Deserialize, Debug)]
 struct Page {
@@ -53,7 +50,7 @@ fn calc_max_kv_per_page(ksize: usize, vsize: usize) -> u8 {
         }
 
         let buf = encode_page(&page);
-        if buf.len() > 4088 {
+        if buf.len() > 4064 {
             assert!(i > 2);
             return i - 1;
         }
