@@ -14,7 +14,7 @@ pub fn decode_page(buf: &[u8]) -> Result<Page> {
 }
 
 pub struct PageRef {
-    pub buf: AlignedVec,
+    pub buf: PageIOBuffer,
     pub data_range: Range<usize>,
 }
 

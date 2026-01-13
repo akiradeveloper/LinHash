@@ -19,15 +19,9 @@ impl IO {
         Ok(Self { fd })
     }
 
-    pub fn read(&self, buf: &mut [u8], offset: u64) -> Result<()> {
-        let n = buf.len();
-        let mut io_buf = PageIOBuffer::with_capacity(n);
-        io_buf.resize(n, 0);
-
-        let mut io_vec = [rustix::io::IoSliceMut::new(io_buf.as_mut_slice())];
+    pub fn read(&self, buf: &mut PageIOBuffer, offset: u64) -> Result<()> {
+        let mut io_vec = [rustix::io::IoSliceMut::new(buf.as_mut_slice())];
         preadv2(&self.fd, &mut io_vec, offset, ReadWriteFlags::empty())?;
-
-        buf.copy_from_slice(io_buf.as_slice());
 
         Ok(())
     }
@@ -65,11 +59,12 @@ mod tests {
         let write_buf = vec![1u8; 4096];
         io.write(&write_buf, 3 * 4096).unwrap();
 
-        let mut read_buf = vec![0u8; 4096];
-        assert_ne!(write_buf, read_buf);
+        let mut read_buf = PageIOBuffer::with_capacity(4096);
+        read_buf.resize(4096, 0);
+        assert_ne!(write_buf, read_buf.as_slice());
 
         io.read(&mut read_buf, 3 * 4096).unwrap();
 
-        assert_eq!(write_buf, read_buf);
+        assert_eq!(write_buf, read_buf.as_slice());
     }
 }

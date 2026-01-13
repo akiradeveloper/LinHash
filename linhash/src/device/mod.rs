@@ -42,7 +42,8 @@ impl Device {
     }
 
     pub fn read_page(&self, id: u64) -> Result<Option<Page>> {
-        let mut buf = vec![0u8; 4096];
+        let mut buf = PageIOBuffer::with_capacity(4096);
+        buf.resize(4096, 0);
         self.io.read(&mut buf, id * 4096)?;
 
         let stored_crc = u32::from_le_bytes(buf[0..4].try_into().unwrap());
@@ -58,7 +59,7 @@ impl Device {
     }
 
     pub fn read_page_ref(&self, id: u64) -> Result<Option<PageRef>> {
-        let mut buf = AlignedVec::with_capacity(4096);
+        let mut buf = PageIOBuffer::with_capacity(4096);
         buf.resize(4096, 0);
 
         self.io.read(&mut buf, id * 4096)?;
