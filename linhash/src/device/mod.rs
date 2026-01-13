@@ -52,7 +52,7 @@ impl Device {
         buf.resize(4096, 0);
         self.io.read(&mut buf, id * 4096)?;
 
-        let stored_magic  = u32::from_le_bytes(buf[0..4].try_into().unwrap());
+        let stored_magic = u32::from_le_bytes(buf[0..4].try_into().unwrap());
         if stored_magic != MAGIC {
             return Ok(None);
         }
@@ -78,7 +78,7 @@ impl Device {
 
         self.io.read(&mut buf, id * 4096)?;
 
-        let stored_magic  = u32::from_le_bytes(buf[0..4].try_into().unwrap());
+        let stored_magic = u32::from_le_bytes(buf[0..4].try_into().unwrap());
         if stored_magic != MAGIC {
             return Ok(None);
         }

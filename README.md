@@ -1,5 +1,8 @@
 # LinHash
 
+[![Crates.io](https://img.shields.io/crates/v/linhash.svg)](https://crates.io/crates/linhash)
+[![API doc](https://docs.rs/linhash/badge.svg)](https://docs.rs/linhash)
+
 Linear Hashing implementation in Rust.
 
 ## What's good about Linear Hashing?
@@ -10,7 +13,12 @@ Linear Hashing implementation in Rust.
 - The query performance doesn't depend on the database size.
 - The algorithm is simple and elegant.
 
-## Feature Gates
+## What's good about this implementation?
+
+- Use rkyv's zero-copy deserialization for fast queries.
+- Use RWF_ATOMIC flag for avoiding torn writes.
+
+## Cargo Features
 
 | flag | default | description |
 | -- | -- | -- |
