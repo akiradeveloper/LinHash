@@ -79,21 +79,8 @@ pub struct LinHash {
 
 impl LinHash {
     pub fn new(dir: &Path) -> Result<Self> {
-        let main_page_file = File::options()
-            .read(true)
-            .write(true)
-            .create(true)
-            .open(dir.join("main"))?;
-
-        let main_pages = Device::new(main_page_file);
-
-        let overflow_page_file = File::options()
-            .read(true)
-            .write(true)
-            .create(true)
-            .open(dir.join("overflow"))?;
-
-        let overflow_pages = Device::new(overflow_page_file);
+        let main_pages = Device::new(&dir.join("main"))?;
+        let overflow_pages = Device::new(&dir.join("overflow"))?;
 
         Ok(Self {
             main_pages,

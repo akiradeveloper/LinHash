@@ -30,8 +30,13 @@ pub struct Device {
 }
 
 impl Device {
-    pub fn new(f: File) -> Self {
-        Self { io: IO::new(f) }
+    pub fn new(path: &Path) -> Result<Self> {
+        let f = File::options()
+         .read(true)
+            .write(true)
+            .create(true)
+            .open(path)?;
+        Ok(Self { io: IO::new(f) })
     }
 
     fn into_data(page: Page) -> Vec<u8> {
@@ -109,7 +114,7 @@ mod tests {
     #[test]
     fn test_read_page_ref() {
         let f = tempfile::NamedTempFile::new().unwrap();
-        let device = Device::new(f.reopen().unwrap());
+        let device = Device::new(f.path()).unwrap();
 
         let mut page = Page {
             kv_pairs: HashMap::new(),
