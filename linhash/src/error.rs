@@ -4,6 +4,8 @@ pub enum Error {
     Rkyv(#[from] rkyv::rancor::Error),
     #[error(transparent)]
     IO(#[from] std::io::Error),
+    #[error(transparent)]
+    RustixIO(#[from] rustix::io::Errno),
 }
 
 pub type Result<T> = std::result::Result<T, Error>;

@@ -1,36 +1,7 @@
 use super::*;
 
-struct IO {
-    f: File,
-}
-
-impl IO {
-    fn new(p: &Path) -> Self {
-        let f = File::options()
-            .read(true)
-            .write(true)
-            .create(true)
-            .open(p)
-            .unwrap();
-
-        Self { f }
-    }
-
-    fn read(&self, buf: &mut [u8], offset: u64) -> Result<()> {
-        self.f.read_at(buf, offset)?;
-        Ok(())
-    }
-
-    fn write(&self, buf: &[u8], offset: u64) -> Result<()> {
-        self.f.write_at(buf, offset)?;
-        Ok(())
-    }
-
-    fn flush(&self) -> Result<()> {
-        self.f.sync_all()?;
-        Ok(())
-    }
-}
+mod io;
+use io::IO;
 
 pub struct Device {
     io: IO,
@@ -38,7 +9,7 @@ pub struct Device {
 
 impl Device {
     pub fn new(path: &Path) -> Result<Self> {
-        Ok(Self { io: IO::new(path) })
+        Ok(Self { io: IO::new(path)? })
     }
 
     fn into_data(page: Page) -> Vec<u8> {

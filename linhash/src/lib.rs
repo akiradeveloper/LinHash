@@ -16,6 +16,8 @@ mod op;
 mod page;
 use page::*;
 
+type PageIOBuffer = AlignedVec<4096>;
+
 #[derive(rkyv::Archive, rkyv::Serialize, rkyv::Deserialize, Debug)]
 struct Page {
     kv_pairs: HashMap<Vec<u8>, Vec<u8>>,
