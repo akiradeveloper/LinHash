@@ -6,7 +6,9 @@ use std::collections::HashSet;
 #[derive(Parser, Debug)]
 struct CommandArgs {
     #[arg(long, default_value_t = 32)]
-    datasize: u32,
+    ksize: u32,
+    #[arg(long, default_value_t = 32)]
+    vsize: u32,
     #[arg(long)]
     warmup: u64,
 }
@@ -16,14 +18,14 @@ fn main() {
     dbg!(&args);
 
     let dir = tempfile::tempdir().unwrap();
-    let mut db = LinHash::open(dir.path(), 32, args.datasize as usize).unwrap();
+    let mut db = LinHash::open(dir.path(), args.ksize as usize, args.vsize as usize).unwrap();
 
     let mut keys = HashSet::new();
 
     let t = std::time::Instant::now();
     for _ in 0..args.warmup {
-        let key = random(32); // 256 bits key
-        let data = random(args.datasize as usize);
+        let key = random(args.ksize as usize); // 256 bits key
+        let data = random(args.vsize as usize);
         db.insert(key.clone(), data).unwrap();
         keys.insert(key);
     }
