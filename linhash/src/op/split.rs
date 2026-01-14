@@ -37,7 +37,7 @@ impl Split<'_> {
 
     // Collect all the kv-pairs which is reachable from the main page at `next_split_id`.
     fn collect_rehash_kv_pairs(&self) -> Result<Vec<(Vec<u8>, Vec<u8>)>> {
-        let split_id = self.db.next_split_main_page_id;
+        let split_id = self.db.ctrl.next_split_main_page_id;
 
         let mut out: Vec<(Vec<u8>, Vec<u8>)> = Vec::new();
 
@@ -64,8 +64,8 @@ impl Split<'_> {
         &mut self,
         kv_pairs: Vec<(Vec<u8>, Vec<u8>)>,
     ) -> BTreeMap<u64, VecDeque<(PageId, Page)>> {
-        let split_id = self.db.next_split_main_page_id;
-        let cur_level = self.db.main_base_level;
+        let split_id = self.db.ctrl.next_split_main_page_id;
+        let cur_level = self.db.ctrl.main_base_level;
 
         let mut page_chains = BTreeMap::new();
         let new_split_id = split_id + (1 << cur_level);

@@ -67,10 +67,49 @@ enum PageId {
     Overflow(u64),
 }
 
-pub struct LinHash {
-    main_pages: Device,
+struct AccessControl {
     main_base_level: u8,
     next_split_main_page_id: u64,
+}
+
+impl AccessControl {
+    fn read_main_page(&self, hash: u64) -> PageLock {
+        let b = self.calc_main_page_id(hash);
+        PageLock(b)
+    }
+
+    fn write_main_page(&self, hash: u64) -> PageLock {
+        let b = self.calc_main_page_id(hash);
+        PageLock(b)
+    }
+
+    fn calc_n_pages(&self) -> u64 {
+        (1 << self.main_base_level) + self.next_split_main_page_id
+    }
+
+    fn calc_main_page_id(&self, hash: u64) -> u64 {
+        let b = hash & ((1 << self.main_base_level) - 1);
+        if b < self.next_split_main_page_id {
+            hash & ((1 << (self.main_base_level + 1)) - 1)
+        } else {
+            b
+        }
+    }
+
+    // Only this function updates `next_split_main_page_id` and `main_base_level`.
+    fn advance_split_pointer(&mut self) {
+        self.next_split_main_page_id += 1;
+        if self.next_split_main_page_id == (1 << self.main_base_level) {
+            self.main_base_level += 1;
+            self.next_split_main_page_id = 0;
+        }
+    }
+}
+
+pub struct LinHash {
+    main_pages: Device,
+
+    ctrl: AccessControl,
 
     overflow_pages: Device,
     next_overflow_id: u64,
@@ -86,8 +125,10 @@ impl LinHash {
 
         Ok(Self {
             main_pages,
-            main_base_level: 1,
-            next_split_main_page_id: 0,
+            ctrl: AccessControl {
+                main_base_level: 1,
+                next_split_main_page_id: 0,
+            },
 
             overflow_pages,
             next_overflow_id: 0,
@@ -123,36 +164,8 @@ impl LinHash {
         xxhash_rust::xxh3::xxh3_64(key)
     }
 
-    fn read_main_page(&self, hash: u64) -> PageLock {
-        let b = self.calc_main_page_id(hash);
-        PageLock(b)
-    }
-
-    fn write_main_page(&self, hash: u64) -> PageLock {
-        let b = self.calc_main_page_id(hash);
-        PageLock(b)
-    }
-
-    fn calc_main_page_id(&self, hash: u64) -> u64 {
-        let b = hash & ((1 << self.main_base_level) - 1);
-        if b < self.next_split_main_page_id {
-            hash & ((1 << (self.main_base_level + 1)) - 1)
-        } else {
-            b
-        }
-    }
-
-    // Only this function updates `next_split_main_page_id` and `main_base_level`.
-    fn advance_split_pointer(&mut self) {
-        self.next_split_main_page_id += 1;
-        if self.next_split_main_page_id == (1 << self.main_base_level) {
-            self.main_base_level += 1;
-            self.next_split_main_page_id = 0;
-        }
-    }
-
     fn load_factor(&self) -> f64 {
-        let n_main_pages = (1 << self.main_base_level) + self.next_split_main_page_id;
+        let n_main_pages = self.ctrl.calc_n_pages();
         let max_items = n_main_pages * self.max_kv_per_page.unwrap() as u64;
         self.n_items as f64 / max_items as f64
     }
@@ -162,23 +175,23 @@ impl LinHash {
     }
 
     pub fn get(&self, key: &[u8]) -> Result<Option<Vec<u8>>> {
-        let lock = self.read_main_page(self.calc_hash(key));
+        let lock = self.ctrl.read_main_page(self.calc_hash(key));
         op::Get { db: self, lock }.exec(key)
     }
 
     pub fn insert(&mut self, key: Vec<u8>, value: Vec<u8>) -> Result<Option<Vec<u8>>> {
-        let lock = self.write_main_page(self.calc_hash(&key));
+        let lock = self.ctrl.write_main_page(self.calc_hash(&key));
         let old = op::Insert { db: self, lock }.exec(key, value)?;
 
         if self.load_factor() > 0.8 {
-            let lock = self.write_main_page(self.next_split_main_page_id);
+            let lock = self.ctrl.write_main_page(self.ctrl.next_split_main_page_id);
             op::Split {
                 db: self,
                 lock: lock,
             }
             .exec()
             .ok();
-            self.advance_split_pointer();
+            self.ctrl.advance_split_pointer();
         }
 
         Ok(old)
@@ -186,7 +199,7 @@ impl LinHash {
 
     #[cfg(feature = "delete")]
     pub fn delete(&mut self, key: &[u8]) -> Result<Option<Vec<u8>>> {
-        let lock = self.read_main_page(self.calc_hash(key));
+        let lock = self.ctrl.read_main_page(self.calc_hash(key));
         op::Delete { db: self, lock }.exec(key)
     }
 }

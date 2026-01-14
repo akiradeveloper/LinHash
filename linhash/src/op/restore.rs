@@ -16,8 +16,8 @@ impl Restore<'_> {
         let next_overflow_id = self.traverse_overflow_pages()?;
         let n_items = self.traverse_all_pages(n_main_pages)?;
 
-        self.db.main_base_level = main_base_level;
-        self.db.next_split_main_page_id = next_split_main_page_id;
+        self.db.ctrl.main_base_level = main_base_level;
+        self.db.ctrl.next_split_main_page_id = next_split_main_page_id;
         self.db.next_overflow_id = next_overflow_id;
         self.db.n_items = n_items;
 
