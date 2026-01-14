@@ -3,7 +3,7 @@ fn example() {
     use linhash::LinHash;
 
     let dir = tempfile::tempdir().unwrap();
-    let mut db = LinHash::open(dir.path()).unwrap();
+    let mut db = LinHash::open(dir.path(), 2, 4).unwrap();
 
     db.insert(vec![1, 2], vec![3, 4, 5, 6]).unwrap();
     let old = db.insert(vec![1, 2], vec![7, 8, 9, 10]).unwrap();

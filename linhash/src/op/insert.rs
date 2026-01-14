@@ -7,11 +7,6 @@ pub struct Insert<'a> {
 
 impl Insert<'_> {
     pub fn exec(self, key: Vec<u8>, value: Vec<u8>) -> Result<Option<Vec<u8>>> {
-        // The `max_kv_per_page` is a fixed value so the size of key and value must be fixed.
-        if self.db.max_kv_per_page.is_none() {
-            self.db.max_kv_per_page = Some(calc_max_kv_per_page(key.len(), value.len()));
-        }
-
         // If the existence of the key is confirmed, insertion will be updating.
         #[cfg(feature = "delete")]
         let replace_found = op::Get {
@@ -35,7 +30,7 @@ impl Insert<'_> {
                 cur_page.1.contains(&key)
             } else {
                 cur_page.1.contains(&key)
-                    || cur_page.1.kv_pairs.len() < self.db.max_kv_per_page.unwrap() as usize
+                    || cur_page.1.kv_pairs.len() < self.db.max_kv_per_page as usize
             };
 
             if overwrite_page {

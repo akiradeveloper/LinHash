@@ -4,7 +4,7 @@ use map_test_generator::*;
 #[test]
 fn reference_test() {
     let dir = tempfile::tempdir().unwrap();
-    let mut fh = LinHash::open(dir.path()).unwrap();
+    let mut fh = LinHash::open(dir.path(), 32, 16).unwrap();
 
     let mut m = std::collections::HashMap::new();
 

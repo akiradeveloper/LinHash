@@ -16,7 +16,7 @@ fn main() {
     dbg!(&args);
 
     let dir = tempfile::tempdir().unwrap();
-    let mut db = LinHash::open(dir.path()).unwrap();
+    let mut db = LinHash::open(dir.path(), 32, args.datasize as usize).unwrap();
 
     let mut keys = HashSet::new();
 

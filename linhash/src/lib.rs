@@ -115,11 +115,11 @@ pub struct LinHash {
     next_overflow_id: u64,
 
     n_items: u64,
-    max_kv_per_page: Option<u8>,
+    max_kv_per_page: u8,
 }
 
 impl LinHash {
-    fn new(dir: &Path) -> Result<Self> {
+    fn new(dir: &Path, ksize: usize, vsize: usize) -> Result<Self> {
         let main_pages = Device::new(&dir.join("main"))?;
         let overflow_pages = Device::new(&dir.join("overflow"))?;
 
@@ -133,13 +133,13 @@ impl LinHash {
             overflow_pages,
             next_overflow_id: 0,
 
-            max_kv_per_page: None,
+            max_kv_per_page: calc_max_kv_per_page(ksize, vsize),
             n_items: 0,
         })
     }
 
-    pub fn open(dir: &Path) -> Result<Self> {
-        let mut db = Self::new(dir)?;
+    pub fn open(dir: &Path, ksize: usize, vsize: usize) -> Result<Self> {
+        let mut db = Self::new(dir, ksize, vsize)?;
 
         let n_main_pages = op::Restore { db: &mut db }.exec()?;
 
@@ -166,7 +166,7 @@ impl LinHash {
 
     fn load_factor(&self) -> f64 {
         let n_main_pages = self.ctrl.calc_n_pages();
-        let max_items = n_main_pages * self.max_kv_per_page.unwrap() as u64;
+        let max_items = n_main_pages * self.max_kv_per_page as u64;
         self.n_items as f64 / max_items as f64
     }
 

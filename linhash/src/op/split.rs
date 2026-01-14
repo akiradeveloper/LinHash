@@ -80,7 +80,7 @@ impl Split<'_> {
             let b = hash & ((1 << (cur_level + 1)) - 1);
             let tail = page_chains.get_mut(&b).unwrap().back_mut().unwrap();
 
-            if tail.1.kv_pairs.len() < self.db.max_kv_per_page.unwrap() as usize {
+            if tail.1.kv_pairs.len() < self.db.max_kv_per_page as usize {
                 tail.1.insert(k, v);
                 continue;
             } else {
