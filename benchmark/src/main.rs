@@ -28,7 +28,7 @@ fn main() {
         keys.insert(key);
     }
     let elapsed = t.elapsed();
-    eprintln!("Write: {:?}", elapsed / args.warmup as u32);
+    eprintln!("Write: {:?}/ops", elapsed / args.warmup as u32);
 
     eprintln!("Warmup done. Starting benchmark...");
 
@@ -51,7 +51,7 @@ fn main() {
         sum += r;
     }
 
-    eprintln!("Read: {:?}", sum / n as u32);
+    eprintln!("Read: {:?}/ops", sum / n as u32);
 }
 
 fn random(size: usize) -> Vec<u8> {
