@@ -20,12 +20,15 @@ fn main() {
 
     let mut keys = HashSet::new();
 
+    let t = std::time::Instant::now();
     for _ in 0..args.warmup {
         let key = random(32); // 256 bits key
         let data = random(args.datasize as usize);
         db.insert(key.clone(), data).unwrap();
         keys.insert(key);
     }
+    let elapsed = t.elapsed();
+    eprintln!("Write: {:?}", elapsed / args.warmup as u32);
 
     eprintln!("Warmup done. Starting benchmark...");
 
@@ -48,7 +51,7 @@ fn main() {
         sum += r;
     }
 
-    eprintln!("Latency: {:?}", sum / n as u32);
+    eprintln!("Read: {:?}", sum / n as u32);
 }
 
 fn random(size: usize) -> Vec<u8> {
