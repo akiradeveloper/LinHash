@@ -19,6 +19,10 @@ Linear Hashing implementation in Rust.
 - Use rkyv's zero-copy deserialization for fast queries.
 - Use RWF_ATOMIC flag for avoiding torn writes.
 
+## Limitations
+
+- Key size and value size must be fixed.
+
 ## Example
 
 The API is as same as `HashMap`.
@@ -30,7 +34,7 @@ let dir = tempfile::tempdir().unwrap();
 let mut db = LinHash::open(dir.path()).unwrap();
 
 db.insert(vec![1,2], vec![3,4,5,6]).unwrap();
-let old = db.insert(vec!{1,2}, vec![7,8,9,10]).unwrap();
+let old = db.insert(vec![1,2], vec![7,8,9,10]).unwrap();
 assert_eq!(old, Some(vec![3,4,5,6]));
 
 assert_eq!(db.get(&vec![1,2]).unwrap(), Some(vec![7,8,9,10]));
