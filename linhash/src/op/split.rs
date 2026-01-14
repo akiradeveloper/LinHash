@@ -2,6 +2,8 @@ use super::*;
 
 pub struct Split<'a> {
     pub db: &'a mut LinHash,
+    #[allow(unused)]
+    pub lock: PageLock,
 }
 
 impl Split<'_> {
@@ -29,8 +31,6 @@ impl Split<'_> {
                 }
             }
         }
-
-        self.inc_split_id();
 
         Ok(())
     }
@@ -76,7 +76,7 @@ impl Split<'_> {
         }
 
         for (k, v) in kv_pairs {
-            let hash = self.db.hash_key(&k);
+            let hash = self.db.calc_hash(&k);
             let b = hash & ((1 << (cur_level + 1)) - 1);
             let tail = page_chains.get_mut(&b).unwrap().back_mut().unwrap();
 
@@ -99,14 +99,5 @@ impl Split<'_> {
         }
 
         page_chains
-    }
-
-    // Only this function updates `next_split_main_page_id` and `main_base_level`.
-    fn inc_split_id(&mut self) {
-        self.db.next_split_main_page_id += 1;
-        if self.db.next_split_main_page_id == (1 << self.db.main_base_level) {
-            self.db.main_base_level += 1;
-            self.db.next_split_main_page_id = 0;
-        }
     }
 }

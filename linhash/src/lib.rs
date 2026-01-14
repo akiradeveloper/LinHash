@@ -15,6 +15,9 @@ use page::*;
 
 type PageIOBuffer = rkyv::util::AlignedVec<4096>;
 
+#[derive(Clone, Copy)]
+struct PageLock(u64);
+
 #[derive(rkyv::Archive, rkyv::Serialize, rkyv::Deserialize, Debug)]
 struct Page {
     kv_pairs: HashMap<Vec<u8>, Vec<u8>>,
@@ -110,24 +113,41 @@ impl LinHash {
 
     // The key must be at least 64 bits.
     #[cfg(not(feature = "hash"))]
-    fn hash_key(&self, key: &[u8]) -> u64 {
+    fn calc_hash(&self, key: &[u8]) -> u64 {
         let a: [u8; 8] = key[0..8].try_into().ok().unwrap();
         u64::from_le_bytes(a)
     }
 
     #[cfg(feature = "hash")]
-    fn hash_key(&self, key: &[u8]) -> u64 {
+    fn calc_hash(&self, key: &[u8]) -> u64 {
         xxhash_rust::xxh3::xxh3_64(key)
     }
 
-    fn calc_main_page_id(&self, key: &[u8]) -> u64 {
-        let hash = self.hash_key(key);
+    fn read_main_page(&self, hash: u64) -> PageLock {
+        let b = self.calc_main_page_id(hash);
+        PageLock(b)
+    }
 
+    fn write_main_page(&self, hash: u64) -> PageLock {
+        let b = self.calc_main_page_id(hash);
+        PageLock(b)
+    }
+
+    fn calc_main_page_id(&self, hash: u64) -> u64 {
         let b = hash & ((1 << self.main_base_level) - 1);
         if b < self.next_split_main_page_id {
             hash & ((1 << (self.main_base_level + 1)) - 1)
         } else {
             b
+        }
+    }
+
+    // Only this function updates `next_split_main_page_id` and `main_base_level`.
+    fn advance_split_pointer(&mut self) {
+        self.next_split_main_page_id += 1;
+        if self.next_split_main_page_id == (1 << self.main_base_level) {
+            self.main_base_level += 1;
+            self.next_split_main_page_id = 0;
         }
     }
 
@@ -142,20 +162,23 @@ impl LinHash {
     }
 
     pub fn get(&self, key: &[u8]) -> Result<Option<Vec<u8>>> {
-        op::Get { db: self }.exec(key)
+        let lock = self.read_main_page(self.calc_hash(key));
+        op::Get { db: self, lock }.exec(key)
     }
 
     pub fn insert(&mut self, key: Vec<u8>, value: Vec<u8>) -> Result<Option<Vec<u8>>> {
-        // If the existence of the key is confirmed, insertion will be updating.
-        #[cfg(feature = "delete")]
-        let confirmed = op::Get { db: self }.exec(&key)?.is_some();
-        #[cfg(not(feature = "delete"))]
-        let confirmed = false;
-
-        let old = op::Insert { db: self }.exec(key, value, confirmed)?;
+        let lock = self.write_main_page(self.calc_hash(&key));
+        let old = op::Insert { db: self, lock }.exec(key, value)?;
 
         if self.load_factor() > 0.8 {
-            op::Split { db: self }.exec().ok();
+            let lock = self.write_main_page(self.next_split_main_page_id);
+            op::Split {
+                db: self,
+                lock: lock,
+            }
+            .exec()
+            .ok();
+            self.advance_split_pointer();
         }
 
         Ok(old)
@@ -163,6 +186,7 @@ impl LinHash {
 
     #[cfg(feature = "delete")]
     pub fn delete(&mut self, key: &[u8]) -> Result<Option<Vec<u8>>> {
-        op::Delete { db: self }.exec(key)
+        let lock = self.read_main_page(self.calc_hash(key));
+        op::Delete { db: self, lock }.exec(key)
     }
 }

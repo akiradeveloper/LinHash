@@ -2,13 +2,15 @@ use super::*;
 
 pub struct Delete<'a> {
     pub db: &'a mut LinHash,
+    pub lock: PageLock,
 }
 
 impl Delete<'_> {
     pub fn exec(self, key: &[u8]) -> Result<Option<Vec<u8>>> {
-        let b = self.db.calc_main_page_id(key);
-
-        let mut cur_page = (PageId::Main(b), self.db.main_pages.read_page(b)?.unwrap());
+        let mut cur_page = (
+            PageId::Main(self.lock.0),
+            self.db.main_pages.read_page(self.lock.0)?.unwrap(),
+        );
 
         loop {
             if cur_page.1.contains(key) {

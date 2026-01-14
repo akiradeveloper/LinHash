@@ -2,26 +2,36 @@ use super::*;
 
 pub struct Insert<'a> {
     pub db: &'a mut LinHash,
+    pub lock: PageLock,
 }
 
 impl Insert<'_> {
-    pub fn exec(
-        self,
-        key: Vec<u8>,
-        value: Vec<u8>,
-        existence_confirmed: bool,
-    ) -> Result<Option<Vec<u8>>> {
+    pub fn exec(self, key: Vec<u8>, value: Vec<u8>) -> Result<Option<Vec<u8>>> {
         // The `max_kv_per_page` is a fixed value so the size of key and value must be fixed.
         if self.db.max_kv_per_page.is_none() {
             self.db.max_kv_per_page = Some(calc_max_kv_per_page(key.len(), value.len()));
         }
 
-        let b = self.db.calc_main_page_id(&key);
+        // If the existence of the key is confirmed, insertion will be updating.
+        #[cfg(feature = "delete")]
+        let replace_found = op::Get {
+            db: self.db,
+            lock: self.lock,
+        }
+        .exec(&key)?
+        .is_some();
 
-        let mut cur_page = (PageId::Main(b), self.db.main_pages.read_page(b)?.unwrap());
+        // If the deletion is not supported, there can not be a hole in the pages.
+        #[cfg(not(feature = "delete"))]
+        let replace_found = false;
+
+        let mut cur_page = (
+            PageId::Main(self.lock.0),
+            self.db.main_pages.read_page(self.lock.0)?.unwrap(),
+        );
 
         loop {
-            let overwrite_page = if existence_confirmed {
+            let overwrite_page = if replace_found {
                 cur_page.1.contains(&key)
             } else {
                 cur_page.1.contains(&key)

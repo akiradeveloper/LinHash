@@ -2,12 +2,12 @@ use super::*;
 
 pub struct Get<'a> {
     pub db: &'a LinHash,
+    pub lock: PageLock,
 }
 
 impl Get<'_> {
     pub fn exec(self, key: &[u8]) -> Result<Option<Vec<u8>>> {
-        let b = self.db.calc_main_page_id(key);
-        let mut page = self.db.main_pages.read_page_ref(b)?.unwrap();
+        let mut page = self.db.main_pages.read_page_ref(self.lock.0)?.unwrap();
 
         loop {
             if let Some(v) = page.get_value(key) {
