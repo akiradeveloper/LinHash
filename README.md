@@ -2,6 +2,7 @@
 
 [![Crates.io](https://img.shields.io/crates/v/linhash.svg)](https://crates.io/crates/linhash)
 [![API doc](https://docs.rs/linhash/badge.svg)](https://docs.rs/linhash)
+![CI](https://github.com/akiradeveloper/linhash/actions/workflows/ci-master.yml/badge.svg)
 
 Linear Hashing implementation in Rust.
 
