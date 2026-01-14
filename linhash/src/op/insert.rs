@@ -31,7 +31,7 @@ impl Insert<'_> {
             if overwrite_page {
                 let old = cur_page.1.insert(key, value);
                 match cur_page.0 {
-                    PageId::Main(b) => self.db.main_pages.write_page_atomic(b, cur_page.1)?,
+                    PageId::Main(b) => self.db.main_pages.write_page(b, cur_page.1)?,
                     PageId::Overflow(id) => self.db.overflow_pages.write_page(id, cur_page.1)?,
                 }
 
@@ -68,7 +68,7 @@ impl Insert<'_> {
         tail_page.1.overflow_id = Some(new_overflow_id);
         match tail_page.0 {
             PageId::Main(b) => {
-                self.db.main_pages.write_page_atomic(b, tail_page.1)?;
+                self.db.main_pages.write_page(b, tail_page.1)?;
             }
             PageId::Overflow(id) => {
                 self.db.overflow_pages.write_page(id, tail_page.1)?;

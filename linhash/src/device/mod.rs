@@ -39,14 +39,6 @@ impl Device {
         Ok(())
     }
 
-    // We need to ensure writing to main pages is atomic but for now, it is not possible.
-    // There is a risk of losing consistency if writing to main pages ended in torn write.
-    pub fn write_page_atomic(&self, id: u64, page: Page) -> Result<()> {
-        let buf = Self::into_data(page);
-        self.io.write(&buf, id * 4096)?;
-        Ok(())
-    }
-
     pub fn read_page(&self, id: u64) -> Result<Option<Page>> {
         let mut buf = PageIOBuffer::with_capacity(4096);
         buf.resize(4096, 0);

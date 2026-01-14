@@ -27,6 +27,11 @@ impl IO {
     }
 
     pub fn write(&self, buf: &PageIOBuffer, offset: u64) -> Result<()> {
+        let atomic_flag = ReadWriteFlags::from_bits(libc::RWF_ATOMIC as u32).unwrap();
+
+        let mut flags = ReadWriteFlags::empty();
+        flags.insert(atomic_flag);
+
         let io_vec = [rustix::io::IoSlice::new(buf.as_slice())];
         pwritev2(&self.fd, &io_vec, offset, ReadWriteFlags::empty())?;
 

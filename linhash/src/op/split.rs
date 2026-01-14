@@ -20,7 +20,7 @@ impl Split<'_> {
                         // Before commiting the main page, ensure that overflow pages is persisted.
                         // Since split is rare, performance impact by sync call is small.
                         self.db.overflow_pages.flush()?;
-                        self.db.main_pages.write_page_atomic(id, page)?;
+                        self.db.main_pages.write_page(id, page)?;
                         // We don't need to sync the main page because losing the main page doesn't affect consistency.
                     }
                     PageId::Overflow(id) => {
