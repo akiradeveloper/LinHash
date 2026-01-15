@@ -1,43 +1,22 @@
 use super::*;
 
-pub struct Split<'a> {
+pub struct SplitPrepare<'a> {
     pub db: &'a mut LinHash,
     #[allow(unused)]
-    pub lock: PageLock,
+    pub lock: ReadLock,
 }
 
-impl Split<'_> {
+impl SplitPrepare<'_> {
     /// Split the main page at `next_split_id` into two main pages.
-    pub fn exec(mut self) -> Result<()> {
+    pub fn exec(mut self) -> Result<BTreeMap<u64, VecDeque<(PageId, Page)>>> {
         let kv_pairs = self.collect_rehash_kv_pairs()?;
-
         let page_chains = self.insert_kv_pairs_into_pages(kv_pairs);
-
-        // Write from bigger main page id (new one) to avoid losing pairs on crash.
-        for (_, page_chain) in page_chains.into_iter().rev() {
-            // Write from overflow pages.
-            for (page_id, page) in page_chain.into_iter().rev() {
-                match page_id {
-                    PageId::Main(id) => {
-                        // Before commiting the main page, ensure that overflow pages is persisted.
-                        // Since split is rare, performance impact by sync call is small.
-                        self.db.overflow_pages.flush()?;
-                        self.db.main_pages.write_page(id, page)?;
-                        // We don't need to sync the main page because losing the main page doesn't affect consistency.
-                    }
-                    PageId::Overflow(id) => {
-                        self.db.overflow_pages.write_page(id, page)?;
-                    }
-                }
-            }
-        }
-
-        Ok(())
+        Ok(page_chains)
     }
 
     // Collect all the kv-pairs which is reachable from the main page at `next_split_id`.
     fn collect_rehash_kv_pairs(&self) -> Result<Vec<(Vec<u8>, Vec<u8>)>> {
-        let split_id = self.db.ctrl.next_split_main_page_id;
+        let split_id = self.db.root.next_split_main_page_id;
 
         let mut out: Vec<(Vec<u8>, Vec<u8>)> = Vec::new();
 
@@ -64,8 +43,8 @@ impl Split<'_> {
         &mut self,
         kv_pairs: Vec<(Vec<u8>, Vec<u8>)>,
     ) -> BTreeMap<u64, VecDeque<(PageId, Page)>> {
-        let split_id = self.db.ctrl.next_split_main_page_id;
-        let cur_level = self.db.ctrl.main_base_level;
+        let split_id = self.db.root.next_split_main_page_id;
+        let cur_level = self.db.root.main_base_level;
 
         let mut page_chains = BTreeMap::new();
         let new_split_id = split_id + (1 << cur_level);
@@ -99,5 +78,35 @@ impl Split<'_> {
         }
 
         page_chains
+    }
+}
+
+pub struct SplitCommit<'a> {
+    pub db: &'a mut LinHash,
+}
+
+impl SplitCommit<'_> {
+    pub fn exec(self, page_chains: BTreeMap<u64, VecDeque<(PageId, Page)>>) -> Result<()> {
+        // Write from bigger main page id (new one) to avoid losing pairs on crash.
+        for (_, page_chain) in page_chains.into_iter().rev() {
+            // Write from overflow pages.
+            for (page_id, page) in page_chain.into_iter().rev() {
+                match page_id {
+                    PageId::Main(id) => {
+                        // Before commiting the main page, ensure that overflow pages is persisted.
+                        // Since split is rare, performance impact by sync call is small.
+                        self.db.overflow_pages.flush()?;
+                        self.db.main_pages.write_page(id, page)?;
+                        // We don't need to sync the main page because losing the main page doesn't affect consistency.
+                    }
+                    PageId::Overflow(id) => {
+                        self.db.overflow_pages.write_page(id, page)?;
+                    }
+                }
+            }
+        }
+
+        self.db.root.advance_split_pointer();
+        Ok(())
     }
 }

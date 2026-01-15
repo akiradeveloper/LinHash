@@ -2,7 +2,7 @@ use super::*;
 
 pub struct Get<'a> {
     pub db: &'a LinHash,
-    pub lock: PageLock,
+    pub lock: ReadLock,
 }
 
 impl Get<'_> {

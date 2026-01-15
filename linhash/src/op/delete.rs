@@ -2,7 +2,7 @@ use super::*;
 
 pub struct Delete<'a> {
     pub db: &'a mut LinHash,
-    pub lock: PageLock,
+    pub lock: SelectiveLock,
 }
 
 impl Delete<'_> {

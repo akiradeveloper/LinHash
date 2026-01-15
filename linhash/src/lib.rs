@@ -16,7 +16,10 @@ use page::*;
 type PageIOBuffer = rkyv::util::AlignedVec<4096>;
 
 #[derive(Clone, Copy)]
-struct PageLock(u64);
+struct ReadLock(u64);
+
+#[derive(Clone, Copy)]
+struct SelectiveLock(u64);
 
 #[derive(rkyv::Archive, rkyv::Serialize, rkyv::Deserialize, Debug)]
 struct Page {
@@ -67,20 +70,20 @@ enum PageId {
     Overflow(u64),
 }
 
-struct AccessControl {
+struct Root {
     main_base_level: u8,
     next_split_main_page_id: u64,
 }
 
-impl AccessControl {
-    fn read_main_page(&self, hash: u64) -> PageLock {
+impl Root {
+    fn read_main_page(&self, hash: u64) -> ReadLock {
         let b = self.calc_main_page_id(hash);
-        PageLock(b)
+        ReadLock(b)
     }
 
-    fn write_main_page(&self, hash: u64) -> PageLock {
+    fn write_main_page(&self, hash: u64) -> SelectiveLock {
         let b = self.calc_main_page_id(hash);
-        PageLock(b)
+        SelectiveLock(b)
     }
 
     fn calc_n_pages(&self) -> u64 {
@@ -109,7 +112,7 @@ impl AccessControl {
 pub struct LinHash {
     main_pages: Device,
 
-    ctrl: AccessControl,
+    root: Root,
 
     overflow_pages: Device,
     next_overflow_id: u64,
@@ -125,7 +128,7 @@ impl LinHash {
 
         Ok(Self {
             main_pages,
-            ctrl: AccessControl {
+            root: Root {
                 main_base_level: 1,
                 next_split_main_page_id: 0,
             },
@@ -165,7 +168,7 @@ impl LinHash {
     }
 
     fn load_factor(&self) -> f64 {
-        let n_main_pages = self.ctrl.calc_n_pages();
+        let n_main_pages = self.root.calc_n_pages();
         let max_items = n_main_pages * self.max_kv_per_page as u64;
         self.n_items as f64 / max_items as f64
     }
@@ -175,23 +178,21 @@ impl LinHash {
     }
 
     pub fn get(&self, key: &[u8]) -> Result<Option<Vec<u8>>> {
-        let lock = self.ctrl.read_main_page(self.calc_hash(key));
+        let lock = self.root.read_main_page(self.calc_hash(key));
         op::Get { db: self, lock }.exec(key)
     }
 
     pub fn insert(&mut self, key: Vec<u8>, value: Vec<u8>) -> Result<Option<Vec<u8>>> {
-        let lock = self.ctrl.write_main_page(self.calc_hash(&key));
+        let lock = self.root.write_main_page(self.calc_hash(&key));
         let old = op::Insert { db: self, lock }.exec(key, value)?;
 
         if self.load_factor() > 0.8 {
-            let lock = self.ctrl.write_main_page(self.ctrl.next_split_main_page_id);
-            op::Split {
-                db: self,
-                lock: lock,
+            let lock = self.root.read_main_page(self.root.next_split_main_page_id);
+            let page_chains = op::SplitPrepare { db: self, lock }.exec();
+
+            if let Ok(page_chains) = page_chains {
+                op::SplitCommit { db: self }.exec(page_chains).ok();
             }
-            .exec()
-            .ok();
-            self.ctrl.advance_split_pointer();
         }
 
         Ok(old)
@@ -199,7 +200,7 @@ impl LinHash {
 
     #[cfg(feature = "delete")]
     pub fn delete(&mut self, key: &[u8]) -> Result<Option<Vec<u8>>> {
-        let lock = self.ctrl.read_main_page(self.calc_hash(key));
+        let lock = self.root.write_main_page(self.calc_hash(key));
         op::Delete { db: self, lock }.exec(key)
     }
 }

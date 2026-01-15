@@ -2,7 +2,7 @@ use super::*;
 
 pub struct Insert<'a> {
     pub db: &'a mut LinHash,
-    pub lock: PageLock,
+    pub lock: SelectiveLock,
 }
 
 impl Insert<'_> {
@@ -11,7 +11,7 @@ impl Insert<'_> {
         #[cfg(feature = "delete")]
         let replace_found = op::Get {
             db: self.db,
-            lock: self.lock,
+            lock: ReadLock(self.lock.0),
         }
         .exec(&key)?
         .is_some();
