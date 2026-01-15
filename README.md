@@ -21,7 +21,7 @@ Linear Hashing implementation in Rust.
 - Use rkyv's zero-copy deserialization for fast queries.
 - Use RWF_ATOMIC flag for avoiding torn writes.
 
-## Concurrency
+## Type-safe concurrency
 
 Each operation is designed to take a hierarchy of locks before doing its work.
 This is **type-checked** by Rust compiler.
