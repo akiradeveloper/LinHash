@@ -8,15 +8,15 @@ Linear Hashing implementation in Rust.
 
 ## What's good about Linear Hashing?
 
-- It is a on-disk data structure to maintain a key-value mapping.
+- It is a on-disk data structure to maintain key-value mappings.
 - It doesn't use much RAM except temporary buffers.
 - Since queries need only one or two reads from the disk, it is very fast.
-- The query performance doesn't depend on the database size.
-- Concurrency is researched. → [Concurrency in linear hashing (Paper)](https://dl.acm.org/doi/10.1145/22952.22954)
+- The query performance isn't affected by the database size.
 - The algorithm is simple and elegant.
 
 ## What's good about this implementation?
 
+- Queries and updates are fully concurrent base on research paper. → [Concurrency in linear hashing](https://dl.acm.org/doi/10.1145/22952.22954)
 - Use rkyv's zero-copy deserialization for fast queries.
 - Use RWF_ATOMIC flag for avoiding torn writes.
 
