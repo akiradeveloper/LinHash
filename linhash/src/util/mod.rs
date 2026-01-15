@@ -1,4 +1,4 @@
 use super::*;
 
 mod stripelock;
-pub use stripelock::{ReadLockGuard, SelectiveLockGuard, StripeLock};
+pub use stripelock::{ExclusiveLockGuard, ReadLockGuard, SelectiveLockGuard, StripeLock};

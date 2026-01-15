@@ -240,7 +240,7 @@ impl LinHash {
             db: &self.core,
             main_page_id,
             root,
-            lock: self.core.locks.selective_lock(main_page_id),
+            lock: self.core.locks.exclusive_lock(main_page_id),
         }
         .exec(key)
     }

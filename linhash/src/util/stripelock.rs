@@ -4,6 +4,8 @@ pub struct ReadLockGuard<'a>(#[allow(unused)] RwLockReadGuard<'a, ()>);
 
 pub struct SelectiveLockGuard<'a>(RwLockReadGuard<'a, ()>, #[allow(unused)] MutexGuard<'a, ()>);
 
+pub struct ExclusiveLockGuard<'a>(#[allow(unused)] RwLockWriteGuard<'a, ()>);
+
 impl<'a> SelectiveLockGuard<'a> {
     pub fn downgrade(self) -> ReadLockGuard<'a> {
         ReadLockGuard(self.0)
@@ -43,5 +45,10 @@ impl StripeLock {
         let g1 = self.rwlocks[b].read();
         let g2 = self.mutexes[b].lock();
         SelectiveLockGuard(g1, g2)
+    }
+
+    pub fn exclusive_lock(&self, id: u64) -> ExclusiveLockGuard<'_> {
+        let b = (id as usize) % self.n;
+        ExclusiveLockGuard(self.rwlocks[b].write())
     }
 }

@@ -17,7 +17,7 @@ Linear Hashing implementation in Rust.
 
 ## What's good about this implementation?
 
-- Queries and updates are fully concurrent.
+- GETs and INSERTs are fully concurrent.
 - Use rkyv's zero-copy deserialization for fast queries.
 - Use RWF_ATOMIC flag for avoiding torn writes.
 
@@ -26,15 +26,16 @@ Linear Hashing implementation in Rust.
 Each operation is designed to take a hierarchy of locks before doing its work.
 This is **type-checked** by Rust compiler.
 
-| Request | Read Lock | Selective Lock |
-| -- | -- | -- |
-| Read Lock | ✅️ | ✅️ |
-| Selective Lock | ✅️ | ❌️ |
+| | Read Lock | Selective Lock | Exclusive Lock |
+| -- | -- | -- | -- |
+| Read Lock | ✅️ | ✅️ | ❌ |
+| Selective Lock | ✅️ | ❌️ | ❌️ |
+| Exclusive Lock | ❌️ | ❌️ | ❌️ |
 
 | Operation | Root | Bucket |
 | -- | -- | -- |
 | Insert | Read Lock | Selective Lock |
-| Delete | Read Lock | Selective Lock |
+| Delete | Read Lock | Exclusive Lock |
 | Get | Read Lock | Read Lock |
 | Split | Write Lock | |
 
