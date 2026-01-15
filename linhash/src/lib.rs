@@ -175,6 +175,7 @@ impl LinHashCore {
 
 pub struct LinHash {
     core: Arc<LinHashCore>,
+    split_tx: crossbeam::channel::Sender<()>,
 }
 
 impl LinHash {
@@ -182,18 +183,21 @@ impl LinHash {
         let core = LinHashCore::open(dir, ksize, vsize)?;
         let core = Arc::new(core);
 
+        let (tx, rx) = crossbeam::channel::unbounded();
         std::thread::spawn({
             let core = Arc::clone(&core);
-            move || loop {
-                std::thread::sleep(std::time::Duration::from_millis(10));
-                if core.load_factor() > 0.8 {
-                    let root = core.root.write();
-                    op::Split { db: &core, root }.exec().unwrap();
+            move || {
+                while let Ok(()) = rx.recv() {
+                    std::thread::sleep(std::time::Duration::from_millis(10));
+                    if core.load_factor() > 0.8 {
+                        let root = core.root.write();
+                        op::Split { db: &core, root }.exec().unwrap();
+                    }
                 }
             }
         });
 
-        Ok(Self { core })
+        Ok(Self { core, split_tx: tx })
     }
 
     pub fn len(&self) -> u64 {
@@ -222,6 +226,8 @@ impl LinHash {
             lock: self.core.locks.selective_lock(main_page_id),
         }
         .exec(key, value)?;
+
+        self.split_tx.send(()).ok();
 
         Ok(old)
     }
