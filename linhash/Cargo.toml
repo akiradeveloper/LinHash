@@ -28,4 +28,3 @@ map-test-generator = { path = "../map-test-generator" }
 default = ["hash", "delete"]
 hash = ["dep:xxhash-rust"]
 delete = []
-nohash = []
