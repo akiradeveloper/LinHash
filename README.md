@@ -31,7 +31,7 @@ This is **type-checked** by Rust compiler.
 | Read Lock | ✅️ | ✅️ |
 | Selective Lock | ✅️ | ❌️ |
 
-| Operation | Root Lock | Bucket Lock |
+| Operation | Root | Bucket |
 | -- | -- | -- |
 | Insert | Read Lock | Selective Lock |
 | Delete | Read Lock | Selective Lock |
