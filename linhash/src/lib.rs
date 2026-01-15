@@ -45,24 +45,33 @@ impl Page {
     }
 }
 
-fn calc_max_kv_per_page(ksize: usize, vsize: usize) -> u8 {
-    for i in 0..=255 {
-        let mut page = Page {
-            kv_pairs: HashMap::new(),
-            overflow_id: Some(1),
-        };
-        for j in 0..i {
-            page.insert(vec![j; ksize], vec![j; vsize]);
+fn calc_max_kv_per_page(ksize: usize, vsize: usize) -> u16 {
+    let mut page = Page {
+        kv_pairs: HashMap::new(),
+        overflow_id: Some(1),
+    };
+
+    let mut n = 0;
+    for i in 0..u16::MAX {
+        let mut k = vec![0; ksize];
+        let ibytes: [u8; 2] = i.to_le_bytes();
+        for j in 0..std::cmp::min(2, ksize) {
+            k[j] = ibytes[j];
         }
 
+        let old = page.insert(k, vec![1; vsize]);
+        if old.is_none() {
+            n += 1
+        }
+
+        assert!(n >= 1);
         let buf = encode_page(&page);
         if buf.len() > 4064 {
-            assert!(i > 2);
-            return i - 1;
+            return n - 1;
         }
     }
 
-    255
+    n
 }
 
 enum PageId {
@@ -118,7 +127,7 @@ pub struct LinHash {
     next_overflow_id: u64,
 
     n_items: u64,
-    max_kv_per_page: u8,
+    max_kv_per_page: u16,
 }
 
 impl LinHash {
