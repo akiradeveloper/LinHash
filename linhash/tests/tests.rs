@@ -7,40 +7,40 @@ fn vec(i: u64) -> Vec<u8> {
 #[test]
 fn test_open() {
     let dir = tempfile::tempdir().unwrap();
-    let _fh = LinHash::open(dir.path(), 1, 1).unwrap();
+    let _db = LinHash::open(dir.path(), 1, 1).unwrap();
 }
 
 #[test]
 fn test_insert() {
     let dir = tempfile::tempdir().unwrap();
-    let fh = LinHash::open(dir.path(), 8, 8).unwrap();
+    let db = LinHash::open(dir.path(), 8, 8).unwrap();
 
     let n = 10000;
     let range = 0..n;
 
     for i in range.clone() {
-        fh.insert(vec(i), vec(i)).unwrap();
+        db.insert(vec(i), vec(i)).unwrap();
     }
 
-    assert_eq!(fh.len(), n as u64);
+    assert_eq!(db.len(), n as u64);
 }
 
 #[test]
 fn test_get() {
     let dir = tempfile::tempdir().unwrap();
-    let fh = LinHash::open(dir.path(), 8, 8).unwrap();
+    let db = LinHash::open(dir.path(), 8, 8).unwrap();
 
     let n = 10000;
     let range = 0..n;
 
     for i in range.clone() {
-        fh.insert(vec(i), vec(i)).unwrap();
+        db.insert(vec(i), vec(i)).unwrap();
     }
 
-    assert_eq!(fh.len(), n as u64);
+    assert_eq!(db.len(), n as u64);
 
     for i in range {
-        let v = fh.get(&vec(i)).unwrap().unwrap();
+        let v = db.get(&vec(i)).unwrap().unwrap();
         assert_eq!(v, vec(i));
     }
 }
@@ -48,23 +48,23 @@ fn test_get() {
 #[test]
 fn test_update() {
     let dir = tempfile::tempdir().unwrap();
-    let fh = LinHash::open(dir.path(), 8, 8).unwrap();
+    let db = LinHash::open(dir.path(), 8, 8).unwrap();
 
     let n = 10000;
     let range = 0..n;
 
     for i in range.clone() {
-        assert_eq!(fh.insert(vec(i), vec(i)).unwrap(), None);
+        assert_eq!(db.insert(vec(i), vec(i)).unwrap(), None);
     }
 
     for i in range.clone() {
-        assert_eq!(fh.insert(vec(i), vec(i + 1)).unwrap(), Some(vec(i)));
+        assert_eq!(db.insert(vec(i), vec(i + 1)).unwrap(), Some(vec(i)));
     }
 
-    assert_eq!(fh.len(), n as u64);
+    assert_eq!(db.len(), n as u64);
 
     for i in range {
-        let v = fh.get(&vec(i)).unwrap().unwrap();
+        let v = db.get(&vec(i)).unwrap().unwrap();
         assert_eq!(v, vec(i + 1));
     }
 }
@@ -72,24 +72,24 @@ fn test_update() {
 #[test]
 fn test_delete() {
     let dir = tempfile::tempdir().unwrap();
-    let fh = LinHash::open(dir.path(), 8, 8).unwrap();
+    let db = LinHash::open(dir.path(), 8, 8).unwrap();
 
     let n = 10000;
     let range = 0..n;
 
     for i in range.clone() {
-        fh.insert(vec(i), vec(i)).unwrap();
+        db.insert(vec(i), vec(i)).unwrap();
     }
 
     for i in range.clone() {
-        let removed = fh.delete(&vec(i)).unwrap();
+        let removed = db.delete(&vec(i)).unwrap();
         assert_eq!(removed, Some(vec(i)));
     }
 
-    assert_eq!(fh.len(), 0);
+    assert_eq!(db.len(), 0);
 
     for i in range {
-        let v = fh.get(&vec(i)).unwrap();
+        let v = db.get(&vec(i)).unwrap();
         assert!(v.is_none());
     }
 }
@@ -97,26 +97,26 @@ fn test_delete() {
 #[test]
 fn test_insert_half_delete_get() {
     let dir = tempfile::tempdir().unwrap();
-    let fh = LinHash::open(dir.path(), 8, 8).unwrap();
+    let db = LinHash::open(dir.path(), 8, 8).unwrap();
 
     let n = 10000;
 
     for i in 0..n {
-        fh.insert(vec(i), vec(i)).unwrap();
+        db.insert(vec(i), vec(i)).unwrap();
     }
 
     for i in 0..n / 2 {
-        let removed = fh.delete(&vec(i)).unwrap();
+        let removed = db.delete(&vec(i)).unwrap();
         assert_eq!(removed, Some(vec(i)));
     }
 
     for i in 0..n / 2 {
-        let v = fh.get(&vec(i)).unwrap();
+        let v = db.get(&vec(i)).unwrap();
         assert!(v.is_none());
     }
 
     for i in n / 2..n {
-        let e = fh.get(&vec(i)).unwrap();
+        let e = db.get(&vec(i)).unwrap();
         assert_eq!(e, Some(vec(i)));
     }
 }
@@ -124,21 +124,21 @@ fn test_insert_half_delete_get() {
 #[test]
 fn test_insert_half_delete_update() {
     let dir = tempfile::tempdir().unwrap();
-    let fh = LinHash::open(dir.path(), 8, 8).unwrap();
+    let db = LinHash::open(dir.path(), 8, 8).unwrap();
 
     let n = 10000;
 
     for i in 0..n {
-        fh.insert(vec(i), vec(i)).unwrap();
+        db.insert(vec(i), vec(i)).unwrap();
     }
 
     for i in 0..n / 2 {
-        let removed = fh.delete(&vec(i)).unwrap();
+        let removed = db.delete(&vec(i)).unwrap();
         assert_eq!(removed, Some(vec(i)));
     }
 
     for i in n / 2..n {
-        let old = fh.insert(vec(i), vec(i + 1)).unwrap();
+        let old = db.insert(vec(i), vec(i + 1)).unwrap();
         assert_eq!(old, Some(vec(i)));
     }
 }
@@ -146,13 +146,13 @@ fn test_insert_half_delete_update() {
 #[test]
 fn test_restore() {
     let dir = tempfile::tempdir().unwrap();
-    let fh = LinHash::open(dir.path(), 8, 8).unwrap();
+    let db = LinHash::open(dir.path(), 8, 8).unwrap();
 
     let n = 10000;
     let range = 0..n;
 
     for i in range.clone() {
-        fh.insert(vec(i), vec(i)).unwrap();
+        db.insert(vec(i), vec(i)).unwrap();
     }
 
     let fh = LinHash::open(dir.path(), 8, 8).unwrap();

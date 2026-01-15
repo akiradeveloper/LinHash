@@ -1,8 +1,8 @@
 use super::*;
 
-pub struct ReadLockGuard<'a>(RwLockReadGuard<'a, ()>);
+pub struct ReadLockGuard<'a>(#[allow(unused)] RwLockReadGuard<'a, ()>);
 
-pub struct SelectiveLockGuard<'a>(RwLockReadGuard<'a, ()>, MutexGuard<'a, ()>);
+pub struct SelectiveLockGuard<'a>(RwLockReadGuard<'a, ()>, #[allow(unused)] MutexGuard<'a, ()>);
 
 impl<'a> SelectiveLockGuard<'a> {
     pub fn downgrade(self) -> ReadLockGuard<'a> {
