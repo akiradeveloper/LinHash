@@ -244,4 +244,10 @@ impl LinHash {
         }
         .exec(key)
     }
+
+    pub fn flush(&self) -> Result<()> {
+        self.core.overflow_pages.flush()?;
+        self.core.main_pages.flush()?;
+        Ok(())
+    }
 }
