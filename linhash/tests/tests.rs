@@ -13,7 +13,7 @@ fn test_open() {
 #[test]
 fn test_insert() {
     let dir = tempfile::tempdir().unwrap();
-    let mut fh = LinHash::open(dir.path(), 8, 8).unwrap();
+    let fh = LinHash::open(dir.path(), 8, 8).unwrap();
 
     let n = 10000;
     let range = 0..n;
@@ -28,7 +28,7 @@ fn test_insert() {
 #[test]
 fn test_get() {
     let dir = tempfile::tempdir().unwrap();
-    let mut fh = LinHash::open(dir.path(), 8, 8).unwrap();
+    let fh = LinHash::open(dir.path(), 8, 8).unwrap();
 
     let n = 10000;
     let range = 0..n;
@@ -48,7 +48,7 @@ fn test_get() {
 #[test]
 fn test_update() {
     let dir = tempfile::tempdir().unwrap();
-    let mut fh = LinHash::open(dir.path(), 8, 8).unwrap();
+    let fh = LinHash::open(dir.path(), 8, 8).unwrap();
 
     let n = 10000;
     let range = 0..n;
@@ -72,7 +72,7 @@ fn test_update() {
 #[test]
 fn test_delete() {
     let dir = tempfile::tempdir().unwrap();
-    let mut fh = LinHash::open(dir.path(), 8, 8).unwrap();
+    let fh = LinHash::open(dir.path(), 8, 8).unwrap();
 
     let n = 10000;
     let range = 0..n;
@@ -97,7 +97,7 @@ fn test_delete() {
 #[test]
 fn test_insert_half_delete_get() {
     let dir = tempfile::tempdir().unwrap();
-    let mut fh = LinHash::open(dir.path(), 8, 8).unwrap();
+    let fh = LinHash::open(dir.path(), 8, 8).unwrap();
 
     let n = 10000;
 
@@ -124,7 +124,7 @@ fn test_insert_half_delete_get() {
 #[test]
 fn test_insert_half_delete_update() {
     let dir = tempfile::tempdir().unwrap();
-    let mut fh = LinHash::open(dir.path(), 8, 8).unwrap();
+    let fh = LinHash::open(dir.path(), 8, 8).unwrap();
 
     let n = 10000;
 
@@ -146,7 +146,7 @@ fn test_insert_half_delete_update() {
 #[test]
 fn test_restore() {
     let dir = tempfile::tempdir().unwrap();
-    let mut fh = LinHash::open(dir.path(), 8, 8).unwrap();
+    let fh = LinHash::open(dir.path(), 8, 8).unwrap();
 
     let n = 10000;
     let range = 0..n;

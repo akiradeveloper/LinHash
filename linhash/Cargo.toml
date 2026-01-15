@@ -13,6 +13,7 @@ keywords = ["linear-hashing", "hash-table", "hashmap"]
 [dependencies]
 crc32fast = "1.5"
 libc = "0.2.180"
+parking_lot = "0.12.5"
 rkyv = "0.8"
 rustix = "1.1"
 thiserror = "2"

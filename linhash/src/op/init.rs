@@ -1,7 +1,7 @@
 use super::*;
 
 pub struct Init<'a> {
-    pub db: &'a mut LinHash,
+    pub db: &'a LinHashCore,
 }
 
 impl Init<'_> {

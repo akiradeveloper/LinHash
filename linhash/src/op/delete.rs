@@ -1,15 +1,19 @@
 use super::*;
 
 pub struct Delete<'a> {
-    pub db: &'a mut LinHash,
-    pub lock: SelectiveLock,
+    pub db: &'a LinHashCore,
+    pub main_page_id: u64,
+    pub root: RwLockReadGuard<'a, Root>,
+    pub lock: util::SelectiveLockGuard<'a>,
 }
 
 impl Delete<'_> {
     pub fn exec(self, key: &[u8]) -> Result<Option<Vec<u8>>> {
+        let main_page_id = self.main_page_id;
+
         let mut cur_page = (
-            PageId::Main(self.lock.0),
-            self.db.main_pages.read_page(self.lock.0)?.unwrap(),
+            PageId::Main(main_page_id),
+            self.db.main_pages.read_page(main_page_id)?.unwrap(),
         );
 
         loop {
@@ -21,7 +25,7 @@ impl Delete<'_> {
                 }
 
                 if removed.is_some() {
-                    self.db.n_items -= 1;
+                    self.db.n_items.fetch_sub(1, Ordering::SeqCst);
                 }
                 return Ok(removed);
             }

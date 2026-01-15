@@ -1,8 +1,7 @@
 use super::*;
 
 mod split;
-pub use split::SplitCommit;
-pub use split::SplitPrepare;
+pub use split::Split;
 
 mod get;
 pub use get::Get;

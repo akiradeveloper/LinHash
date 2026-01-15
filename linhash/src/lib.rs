@@ -1,8 +1,12 @@
+use parking_lot::{Mutex, MutexGuard, RwLock, RwLockReadGuard, RwLockWriteGuard};
 use std::collections::{BTreeMap, HashMap, VecDeque};
 use std::ops::Range;
 use std::path::Path;
+use std::sync::Arc;
+use std::sync::atomic::{AtomicU64, Ordering};
 
 mod error;
+mod util;
 pub use error::Error;
 use error::Result;
 
@@ -14,12 +18,6 @@ mod page;
 use page::*;
 
 type PageIOBuffer = rkyv::util::AlignedVec<4096>;
-
-#[derive(Clone, Copy)]
-struct ReadLock(u64);
-
-#[derive(Clone, Copy)]
-struct SelectiveLock(u64);
 
 #[derive(rkyv::Archive, rkyv::Serialize, rkyv::Deserialize, Debug)]
 struct Page {
@@ -85,16 +83,6 @@ struct Root {
 }
 
 impl Root {
-    fn read_main_page(&self, hash: u64) -> ReadLock {
-        let b = self.calc_main_page_id(hash);
-        ReadLock(b)
-    }
-
-    fn write_main_page(&self, hash: u64) -> SelectiveLock {
-        let b = self.calc_main_page_id(hash);
-        SelectiveLock(b)
-    }
-
     fn calc_n_pages(&self) -> u64 {
         (1 << self.main_base_level) + self.next_split_main_page_id
     }
@@ -118,35 +106,37 @@ impl Root {
     }
 }
 
-pub struct LinHash {
+pub struct LinHashCore {
     main_pages: Device,
 
-    root: Root,
+    root: RwLock<Root>,
+    locks: util::StripeLock,
 
     overflow_pages: Device,
-    next_overflow_id: u64,
+    next_overflow_id: AtomicU64,
 
-    n_items: u64,
+    n_items: AtomicU64,
     max_kv_per_page: u16,
 }
 
-impl LinHash {
+impl LinHashCore {
     fn new(dir: &Path, ksize: usize, vsize: usize) -> Result<Self> {
         let main_pages = Device::new(&dir.join("main"))?;
         let overflow_pages = Device::new(&dir.join("overflow"))?;
 
         Ok(Self {
             main_pages,
-            root: Root {
+            root: RwLock::new(Root {
                 main_base_level: 1,
                 next_split_main_page_id: 0,
-            },
+            }),
+            locks: util::StripeLock::new(1024),
 
             overflow_pages,
-            next_overflow_id: 0,
+            next_overflow_id: AtomicU64::new(0),
 
             max_kv_per_page: calc_max_kv_per_page(ksize, vsize),
-            n_items: 0,
+            n_items: AtomicU64::new(0),
         })
     }
 
@@ -177,39 +167,75 @@ impl LinHash {
     }
 
     fn load_factor(&self) -> f64 {
-        let n_main_pages = self.root.calc_n_pages();
+        let n_main_pages = self.root.read().calc_n_pages();
         let max_items = n_main_pages * self.max_kv_per_page as u64;
-        self.n_items as f64 / max_items as f64
+        self.n_items.load(Ordering::SeqCst) as f64 / max_items as f64
+    }
+}
+
+pub struct LinHash {
+    core: Arc<LinHashCore>,
+}
+
+impl LinHash {
+    pub fn open(dir: &Path, ksize: usize, vsize: usize) -> Result<Self> {
+        let core = LinHashCore::open(dir, ksize, vsize)?;
+        let core = Arc::new(core);
+
+        std::thread::spawn({
+            let core = Arc::clone(&core);
+            move || loop {
+                std::thread::sleep(std::time::Duration::from_millis(10));
+                if core.load_factor() > 0.8 {
+                    let root = core.root.write();
+                    op::Split { db: &core, root }.exec().unwrap();
+                }
+            }
+        });
+
+        Ok(Self { core })
     }
 
     pub fn len(&self) -> u64 {
-        self.n_items
+        self.core.n_items.load(Ordering::SeqCst)
     }
 
     pub fn get(&self, key: &[u8]) -> Result<Option<Vec<u8>>> {
-        let lock = self.root.read_main_page(self.calc_hash(key));
-        op::Get { db: self, lock }.exec(key)
+        let root = self.core.root.read();
+        let main_page_id = root.calc_main_page_id(self.core.calc_hash(key));
+        op::Get {
+            db: &self.core,
+            main_page_id,
+            root: &root,
+            lock: self.core.locks.read_lock(main_page_id),
+        }
+        .exec(key)
     }
 
-    pub fn insert(&mut self, key: Vec<u8>, value: Vec<u8>) -> Result<Option<Vec<u8>>> {
-        let lock = self.root.write_main_page(self.calc_hash(&key));
-        let old = op::Insert { db: self, lock }.exec(key, value)?;
-
-        if self.load_factor() > 0.8 {
-            let lock = self.root.read_main_page(self.root.next_split_main_page_id);
-            let page_chains = op::SplitPrepare { db: self, lock }.exec();
-
-            if let Ok(page_chains) = page_chains {
-                op::SplitCommit { db: self }.exec(page_chains).ok();
-            }
+    pub fn insert(&self, key: Vec<u8>, value: Vec<u8>) -> Result<Option<Vec<u8>>> {
+        let root = self.core.root.read();
+        let main_page_id = root.calc_main_page_id(self.core.calc_hash(&key));
+        let old = op::Insert {
+            db: &self.core,
+            main_page_id,
+            root,
+            lock: self.core.locks.selective_lock(main_page_id),
         }
+        .exec(key, value)?;
 
         Ok(old)
     }
 
     #[cfg(feature = "delete")]
-    pub fn delete(&mut self, key: &[u8]) -> Result<Option<Vec<u8>>> {
-        let lock = self.root.write_main_page(self.calc_hash(key));
-        op::Delete { db: self, lock }.exec(key)
+    pub fn delete(&self, key: &[u8]) -> Result<Option<Vec<u8>>> {
+        let root = self.core.root.read();
+        let main_page_id = root.calc_main_page_id(self.core.calc_hash(key));
+        op::Delete {
+            db: &self.core,
+            main_page_id,
+            root,
+            lock: self.core.locks.selective_lock(main_page_id),
+        }
+        .exec(key)
     }
 }

@@ -1,7 +1,7 @@
 use super::*;
 
 pub struct Restore<'a> {
-    pub db: &'a mut LinHash,
+    pub db: &'a LinHashCore,
 }
 
 impl Restore<'_> {
@@ -16,10 +16,12 @@ impl Restore<'_> {
         let next_overflow_id = self.traverse_overflow_pages()?;
         let n_items = self.traverse_all_pages(n_main_pages)?;
 
-        self.db.root.main_base_level = main_base_level;
-        self.db.root.next_split_main_page_id = next_split_main_page_id;
-        self.db.next_overflow_id = next_overflow_id;
-        self.db.n_items = n_items;
+        self.db.root.write().main_base_level = main_base_level;
+        self.db.root.write().next_split_main_page_id = next_split_main_page_id;
+        self.db
+            .next_overflow_id
+            .store(next_overflow_id, Ordering::SeqCst);
+        self.db.n_items.store(n_items, Ordering::SeqCst);
 
         Ok(n_main_pages)
     }

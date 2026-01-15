@@ -1,22 +1,43 @@
 use super::*;
 
-pub struct SplitPrepare<'a> {
-    pub db: &'a mut LinHash,
-    #[allow(unused)]
-    pub lock: ReadLock,
+pub struct Split<'a> {
+    pub db: &'a LinHashCore,
+    pub root: RwLockWriteGuard<'a, Root>,
 }
 
-impl SplitPrepare<'_> {
+impl Split<'_> {
     /// Split the main page at `next_split_id` into two main pages.
-    pub fn exec(mut self) -> Result<BTreeMap<u64, VecDeque<(PageId, Page)>>> {
+    pub fn exec(mut self) -> Result<()> {
         let kv_pairs = self.collect_rehash_kv_pairs()?;
         let page_chains = self.insert_kv_pairs_into_pages(kv_pairs);
-        Ok(page_chains)
+
+        // Write from bigger main page id (new one) to avoid losing pairs on crash.
+        for (_, page_chain) in page_chains.into_iter().rev() {
+            // Write from overflow pages.
+            for (page_id, page) in page_chain.into_iter().rev() {
+                match page_id {
+                    PageId::Main(id) => {
+                        // Before commiting the main page, ensure that overflow pages is persisted.
+                        // Since split is rare, performance impact by sync call is small.
+                        self.db.overflow_pages.flush()?;
+                        self.db.main_pages.write_page(id, page)?;
+                        // We don't need to sync the main page because losing the main page doesn't affect consistency.
+                    }
+                    PageId::Overflow(id) => {
+                        self.db.overflow_pages.write_page(id, page)?;
+                    }
+                }
+            }
+        }
+
+        self.root.advance_split_pointer();
+
+        Ok(())
     }
 
     // Collect all the kv-pairs which is reachable from the main page at `next_split_id`.
     fn collect_rehash_kv_pairs(&self) -> Result<Vec<(Vec<u8>, Vec<u8>)>> {
-        let split_id = self.db.root.next_split_main_page_id;
+        let split_id = self.root.next_split_main_page_id;
 
         let mut out: Vec<(Vec<u8>, Vec<u8>)> = Vec::new();
 
@@ -40,11 +61,11 @@ impl SplitPrepare<'_> {
     }
 
     fn insert_kv_pairs_into_pages(
-        &mut self,
+        &self,
         kv_pairs: Vec<(Vec<u8>, Vec<u8>)>,
     ) -> BTreeMap<u64, VecDeque<(PageId, Page)>> {
-        let split_id = self.db.root.next_split_main_page_id;
-        let cur_level = self.db.root.main_base_level;
+        let split_id = self.root.next_split_main_page_id;
+        let cur_level = self.root.main_base_level;
 
         let mut page_chains = BTreeMap::new();
         let new_split_id = split_id + (1 << cur_level);
@@ -63,8 +84,7 @@ impl SplitPrepare<'_> {
                 tail.1.insert(k, v);
                 continue;
             } else {
-                let new_overflow_id = self.db.next_overflow_id;
-                self.db.next_overflow_id += 1;
+                let new_overflow_id = self.db.next_overflow_id.fetch_add(1, Ordering::SeqCst);
                 tail.1.overflow_id = Some(new_overflow_id);
 
                 let mut new_page = Page::new();
@@ -78,35 +98,5 @@ impl SplitPrepare<'_> {
         }
 
         page_chains
-    }
-}
-
-pub struct SplitCommit<'a> {
-    pub db: &'a mut LinHash,
-}
-
-impl SplitCommit<'_> {
-    pub fn exec(self, page_chains: BTreeMap<u64, VecDeque<(PageId, Page)>>) -> Result<()> {
-        // Write from bigger main page id (new one) to avoid losing pairs on crash.
-        for (_, page_chain) in page_chains.into_iter().rev() {
-            // Write from overflow pages.
-            for (page_id, page) in page_chain.into_iter().rev() {
-                match page_id {
-                    PageId::Main(id) => {
-                        // Before commiting the main page, ensure that overflow pages is persisted.
-                        // Since split is rare, performance impact by sync call is small.
-                        self.db.overflow_pages.flush()?;
-                        self.db.main_pages.write_page(id, page)?;
-                        // We don't need to sync the main page because losing the main page doesn't affect consistency.
-                    }
-                    PageId::Overflow(id) => {
-                        self.db.overflow_pages.write_page(id, page)?;
-                    }
-                }
-            }
-        }
-
-        self.db.root.advance_split_pointer();
-        Ok(())
     }
 }
