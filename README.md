@@ -12,13 +12,31 @@ Linear Hashing implementation in Rust.
 - It doesn't use much RAM except temporary buffers.
 - Since queries need only one or two reads from the disk, it is very fast.
 - The query performance isn't affected by the database size.
+- Concurrency is studied in [Concurrency in linear hashing](https://dl.acm.org/doi/10.1145/22952.22954).
 - The algorithm is simple and elegant.
 
 ## What's good about this implementation?
 
-- Queries and updates are fully concurrent base on research paper. → [Concurrency in linear hashing](https://dl.acm.org/doi/10.1145/22952.22954)
+- Queries and updates are fully concurrent.
 - Use rkyv's zero-copy deserialization for fast queries.
 - Use RWF_ATOMIC flag for avoiding torn writes.
+
+## Concurrency
+
+Each operation is designed to take a hierarchy of locks before doing its work.
+This is **type-checked** by Rust compiler.
+
+| Request | Read Lock | Selective Lock |
+| -- | -- | -- |
+| Read Lock | ✅️ | ✅️ |
+| Selective Lock | ✅️ | ❌️ |
+
+| Operation | Root Lock | Bucket Lock |
+| -- | -- | -- |
+| Insert | Read Lock | Selective Lock |
+| Delete | Read Lock | Selective Lock |
+| Get | Read Lock | Read Lock |
+| Split | Write Lock | |
 
 ## Limitations
 
