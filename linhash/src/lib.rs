@@ -6,7 +6,7 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicU64, Ordering};
 
 mod error;
-mod util;
+mod lock;
 pub use error::Error;
 use error::Result;
 
@@ -111,7 +111,7 @@ pub struct LinHashCore {
     main_pages: Device,
 
     root: RwLock<Root>,
-    locks: util::StripeLock,
+    locks: lock::StripeLock,
 
     overflow_pages: Device,
     next_overflow_id: AtomicU64,
@@ -131,7 +131,7 @@ impl LinHashCore {
                 main_base_level: 1,
                 next_split_main_page_id: 0,
             }),
-            locks: util::StripeLock::new(1024),
+            locks: lock::StripeLock::new(1024),
 
             overflow_pages,
             next_overflow_id: AtomicU64::new(0),

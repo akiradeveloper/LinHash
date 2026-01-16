@@ -4,7 +4,7 @@ pub struct Insert<'a> {
     pub db: &'a LinHashCore,
     pub main_page_id: u64,
     pub root: RwLockReadGuard<'a, Root>,
-    pub lock: util::SelectiveLockGuard<'a>,
+    pub lock: lock::SelectiveLockGuard<'a>,
 }
 
 impl Insert<'_> {

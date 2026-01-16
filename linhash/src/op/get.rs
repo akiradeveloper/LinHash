@@ -6,7 +6,7 @@ pub struct Get<'a> {
     #[allow(unused)]
     pub root: &'a RwLockReadGuard<'a, Root>,
     #[allow(unused)]
-    pub lock: util::ReadLockGuard<'a>,
+    pub lock: lock::ReadLockGuard<'a>,
 }
 
 impl Get<'_> {

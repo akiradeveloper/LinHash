@@ -6,7 +6,7 @@ pub struct Delete<'a> {
     #[allow(unused)]
     pub root: RwLockReadGuard<'a, Root>,
     #[allow(unused)]
-    pub lock: util::ExclusiveLockGuard<'a>,
+    pub lock: lock::ExclusiveLockGuard<'a>,
 }
 
 impl Delete<'_> {
