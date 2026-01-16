@@ -1,5 +1,7 @@
 #[derive(thiserror::Error, Debug)]
 pub enum Error {
+    #[error("Local level mismatch")]
+    LocalLevelMismatch,
     #[error(transparent)]
     Rkyv(#[from] rkyv::rancor::Error),
     #[error(transparent)]

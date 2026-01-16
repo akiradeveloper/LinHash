@@ -2,7 +2,7 @@ use super::*;
 
 pub struct Insert<'a> {
     pub db: &'a LinHashCore,
-    pub main_page_id: u64,
+    pub chain_id: PageChainId,
     #[allow(unused)]
     pub root: RwLockReadGuard<'a, Root>,
     #[allow(unused)]
@@ -11,14 +11,22 @@ pub struct Insert<'a> {
 
 impl Insert<'_> {
     pub fn exec(self, key: Vec<u8>, value: Vec<u8>) -> Result<Option<Vec<u8>>> {
-        let main_page_id = self.main_page_id;
+        let chain_id = self.chain_id;
 
         let mut pages = VecDeque::new();
 
         let next_page = (
-            PageId::Main(main_page_id),
-            self.db.main_pages.read_page(main_page_id)?.unwrap(),
+            PageId::Main(chain_id.main_page_id),
+            self.db
+                .main_pages
+                .read_page(chain_id.main_page_id)?
+                .unwrap(),
         );
+
+        if next_page.1.locallevel != Some(chain_id.locallevel) {
+            return Err(Error::LocalLevelMismatch);
+        }
+
         pages.push_back(next_page);
 
         loop {

@@ -2,7 +2,7 @@ use super::*;
 
 pub struct Delete<'a> {
     pub db: &'a LinHashCore,
-    pub main_page_id: u64,
+    pub chain_id: PageChainId,
     #[allow(unused)]
     pub root: RwLockReadGuard<'a, Root>,
     #[allow(unused)]
@@ -11,12 +11,19 @@ pub struct Delete<'a> {
 
 impl Delete<'_> {
     pub fn exec(self, key: &[u8]) -> Result<Option<Vec<u8>>> {
-        let main_page_id = self.main_page_id;
+        let chain_id = self.chain_id;
 
         let mut cur_page = (
-            PageId::Main(main_page_id),
-            self.db.main_pages.read_page(main_page_id)?.unwrap(),
+            PageId::Main(chain_id.main_page_id),
+            self.db
+                .main_pages
+                .read_page(chain_id.main_page_id)?
+                .unwrap(),
         );
+
+        if cur_page.1.locallevel != Some(chain_id.locallevel) {
+            return Err(Error::LocalLevelMismatch);
+        }
 
         loop {
             if cur_page.1.contains(key) {

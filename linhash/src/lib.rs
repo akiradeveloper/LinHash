@@ -23,6 +23,7 @@ type PageIOBuffer = rkyv::util::AlignedVec<4096>;
 struct Page {
     kv_pairs: HashMap<Vec<u8>, Vec<u8>>,
     overflow_id: Option<u64>,
+    locallevel: Option<u8>,
 }
 
 impl Page {
@@ -30,6 +31,7 @@ impl Page {
         Self {
             kv_pairs: HashMap::new(),
             overflow_id: None,
+            locallevel: None,
         }
     }
 
@@ -47,6 +49,7 @@ fn calc_max_kv_per_page(ksize: usize, vsize: usize) -> u16 {
     let mut page = Page {
         kv_pairs: HashMap::new(),
         overflow_id: Some(1),
+        locallevel: Some(1),
     };
 
     let mut n = 0;
@@ -78,30 +81,43 @@ enum PageId {
     Overflow(u64),
 }
 
+#[derive(Clone, Copy)]
+struct PageChainId {
+    main_page_id: u64,
+    locallevel: u8,
+}
+
 struct Root {
-    main_base_level: u8,
+    base_level: u8,
     next_split_main_page_id: u64,
 }
 
 impl Root {
     fn calc_n_pages(&self) -> u64 {
-        (1 << self.main_base_level) + self.next_split_main_page_id
+        (1 << self.base_level) + self.next_split_main_page_id
     }
 
-    fn calc_main_page_id(&self, hash: u64) -> u64 {
-        let b = hash & ((1 << self.main_base_level) - 1);
+    fn calc_page_chain_id(&self, hash: u64) -> PageChainId {
+        let b = hash & ((1 << self.base_level) - 1);
         if b < self.next_split_main_page_id {
-            hash & ((1 << (self.main_base_level + 1)) - 1)
+            let b = hash & ((1 << (self.base_level + 1)) - 1);
+            PageChainId {
+                main_page_id: b,
+                locallevel: self.base_level + 1,
+            }
         } else {
-            b
+            PageChainId {
+                main_page_id: b,
+                locallevel: self.base_level,
+            }
         }
     }
 
     // Only this function updates `next_split_main_page_id` and `main_base_level`.
     fn advance_split_pointer(&mut self) {
         self.next_split_main_page_id += 1;
-        if self.next_split_main_page_id == (1 << self.main_base_level) {
-            self.main_base_level += 1;
+        if self.next_split_main_page_id == (1 << self.base_level) {
+            self.base_level += 1;
             self.next_split_main_page_id = 0;
         }
     }
@@ -128,7 +144,7 @@ impl LinHashCore {
         Ok(Self {
             main_pages,
             root: RwLock::new(Root {
-                main_base_level: 1,
+                base_level: 1,
                 next_split_main_page_id: 0,
             }),
             locks: lock::StripeLock::new(1024),
@@ -191,8 +207,25 @@ impl LinHash {
                 while let Ok(()) = rx.recv() {
                     std::thread::sleep(std::time::Duration::from_millis(10));
                     if core.load_factor() > 0.8 {
-                        let root = core.root.write();
-                        op::Split { db: &core, root }.exec().unwrap();
+                        let root = core.root.read();
+
+                        let chain_id = {
+                            let split_id = root.next_split_main_page_id;
+                            let chain_id = root.calc_page_chain_id(split_id);
+                            assert_eq!(chain_id.main_page_id, split_id);
+                            chain_id
+                        };
+
+                        op::Split {
+                            db: &core,
+                            root,
+                            chain_id,
+                            lock: core.locks.selective_lock(chain_id.main_page_id),
+                        }
+                        .exec()
+                        .unwrap();
+
+                        core.root.write().advance_split_pointer();
                     }
                 }
             }
@@ -206,19 +239,27 @@ impl LinHash {
     }
 
     pub fn get(&self, key: &[u8]) -> Result<Option<Vec<u8>>> {
-        let root = self.core.root.read();
-        let main_page_id = root.calc_main_page_id(self.core.calc_hash(key));
-        op::Get {
-            db: &self.core,
-            main_page_id,
-            root,
-            lock: self.core.locks.read_lock(main_page_id),
+        loop {
+            let root = self.core.root.read();
+            let chain_id = root.calc_page_chain_id(self.core.calc_hash(key));
+            let val = op::Get {
+                db: &self.core,
+                chain_id,
+                root,
+                lock: self.core.locks.read_lock(chain_id.main_page_id),
+            }
+            .exec(key);
+
+            match val {
+                Ok(v) => return Ok(v),
+                Err(Error::LocalLevelMismatch) => continue,
+                e => return e,
+            }
         }
-        .exec(key)
     }
 
     pub fn list(&self) -> impl Iterator<Item = (Vec<u8>, Vec<u8>)> {
-        let root = self.core.root.read();
+        let root = self.core.root.write();
         op::List {
             db: &self.core,
             root,
@@ -227,15 +268,23 @@ impl LinHash {
     }
 
     pub fn insert(&self, key: Vec<u8>, value: Vec<u8>) -> Result<Option<Vec<u8>>> {
-        let root = self.core.root.read();
-        let main_page_id = root.calc_main_page_id(self.core.calc_hash(&key));
-        let old = op::Insert {
-            db: &self.core,
-            main_page_id,
-            root,
-            lock: self.core.locks.selective_lock(main_page_id),
-        }
-        .exec(key, value)?;
+        let old = loop {
+            let root = self.core.root.read();
+            let chain_id = root.calc_page_chain_id(self.core.calc_hash(&key));
+            let old = op::Insert {
+                db: &self.core,
+                chain_id,
+                root,
+                lock: self.core.locks.selective_lock(chain_id.main_page_id),
+            }
+            .exec(key.clone(), value.clone());
+
+            match old {
+                Ok(old) => break old,
+                Err(Error::LocalLevelMismatch) => continue,
+                e => return e,
+            }
+        };
 
         self.split_tx.send(()).ok();
 
@@ -243,15 +292,23 @@ impl LinHash {
     }
 
     pub fn delete(&self, key: &[u8]) -> Result<Option<Vec<u8>>> {
-        let root = self.core.root.read();
-        let main_page_id = root.calc_main_page_id(self.core.calc_hash(key));
-        op::Delete {
-            db: &self.core,
-            main_page_id,
-            root,
-            lock: self.core.locks.exclusive_lock(main_page_id),
+        loop {
+            let root = self.core.root.read();
+            let chain_id = root.calc_page_chain_id(self.core.calc_hash(key));
+            let old = op::Delete {
+                db: &self.core,
+                chain_id,
+                root,
+                lock: self.core.locks.exclusive_lock(chain_id.main_page_id),
+            }
+            .exec(key);
+
+            match old {
+                Ok(old) => return Ok(old),
+                Err(Error::LocalLevelMismatch) => continue,
+                e => return e,
+            }
         }
-        .exec(key)
     }
 
     pub fn flush(&self) -> Result<()> {

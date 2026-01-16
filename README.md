@@ -32,13 +32,13 @@ This is **type-checked** by Rust compiler.
 | Selective Lock | ✅️ | ❌️ | ❌️ |
 | Exclusive Lock | ❌️ | ❌️ | ❌️ |
 
-| Operation | Root | Bucket |
+| Operation | Root Lock | Bucket Lock |
 | -- | -- | -- |
 | Insert | Read Lock | Selective Lock |
 | Delete | Read Lock | Exclusive Lock |
 | Get | Read Lock | Read Lock |
-| List | Read Lock | |
-| Split | Write Lock | |
+| List | Exclusive Lock | |
+| Split | Read Lock | Selective Lock |
 
 ## Limitations
 

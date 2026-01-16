@@ -107,6 +107,7 @@ mod tests {
         let mut page = Page {
             kv_pairs: HashMap::new(),
             overflow_id: None,
+            locallevel: None,
         };
         page.insert(vec![1; 32], vec![1; 16]);
         page.insert(vec![2; 32], vec![2; 16]);
@@ -126,6 +127,7 @@ mod tests {
         let mut page = Page {
             kv_pairs: HashMap::new(),
             overflow_id: None,
+            locallevel: None,
         };
         page.insert(vec![1; 32], vec![1; 16]);
         page.insert(vec![2; 32], vec![2; 16]);

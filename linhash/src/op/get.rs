@@ -2,7 +2,7 @@ use super::*;
 
 pub struct Get<'a> {
     pub db: &'a LinHashCore,
-    pub main_page_id: u64,
+    pub chain_id: PageChainId,
     #[allow(unused)]
     pub root: RwLockReadGuard<'a, Root>,
     #[allow(unused)]
@@ -11,9 +11,17 @@ pub struct Get<'a> {
 
 impl Get<'_> {
     pub fn exec(self, key: &[u8]) -> Result<Option<Vec<u8>>> {
-        let main_page_id = self.main_page_id;
+        let chain_id = self.chain_id;
 
-        let mut page = self.db.main_pages.read_page_ref(main_page_id)?.unwrap();
+        let mut page = self
+            .db
+            .main_pages
+            .read_page_ref(chain_id.main_page_id)?
+            .unwrap();
+
+        if page.locallevel() != Some(chain_id.locallevel) {
+            return Err(Error::LocalLevelMismatch);
+        }
 
         loop {
             if let Some(v) = page.get_value(key) {

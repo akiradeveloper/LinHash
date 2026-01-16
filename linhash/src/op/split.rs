@@ -2,12 +2,16 @@ use super::*;
 
 pub struct Split<'a> {
     pub db: &'a LinHashCore,
-    pub root: RwLockWriteGuard<'a, Root>,
+    pub chain_id: PageChainId,
+    #[allow(unused)]
+    pub root: RwLockReadGuard<'a, Root>,
+    #[allow(unused)]
+    pub lock: lock::SelectiveLockGuard<'a>,
 }
 
 impl Split<'_> {
     /// Split the main page at `next_split_id` into two main pages.
-    pub fn exec(mut self) -> Result<()> {
+    pub fn exec(self) -> Result<()> {
         let kv_pairs = self.collect_rehash_kv_pairs()?;
         let page_chains = self.insert_kv_pairs_into_pages(kv_pairs);
 
@@ -30,14 +34,12 @@ impl Split<'_> {
             }
         }
 
-        self.root.advance_split_pointer();
-
         Ok(())
     }
 
     // Collect all the kv-pairs which is reachable from the main page at `next_split_id`.
     fn collect_rehash_kv_pairs(&self) -> Result<Vec<(Vec<u8>, Vec<u8>)>> {
-        let split_id = self.root.next_split_main_page_id;
+        let split_id = self.chain_id.main_page_id;
 
         let mut out: Vec<(Vec<u8>, Vec<u8>)> = Vec::new();
 
@@ -64,15 +66,18 @@ impl Split<'_> {
         &self,
         kv_pairs: Vec<(Vec<u8>, Vec<u8>)>,
     ) -> BTreeMap<u64, VecDeque<(PageId, Page)>> {
-        let split_id = self.root.next_split_main_page_id;
-        let cur_level = self.root.main_base_level;
+        let split_id = self.chain_id.main_page_id;
+        let cur_level = self.chain_id.locallevel;
 
         let mut page_chains = BTreeMap::new();
         let new_split_id = split_id + (1 << cur_level);
         page_chains.insert(split_id, VecDeque::new());
         page_chains.insert(new_split_id, VecDeque::new());
         for (&main_page_id, page_chain) in &mut page_chains {
-            page_chain.push_back((PageId::Main(main_page_id), Page::new()));
+            let mut page = Page::new();
+            page.locallevel = Some(cur_level + 1);
+
+            page_chain.push_back((PageId::Main(main_page_id), page));
         }
 
         for (k, v) in kv_pairs {

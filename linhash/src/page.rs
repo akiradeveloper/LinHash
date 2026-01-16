@@ -37,4 +37,8 @@ impl PageRef {
     pub fn overflow_id(&self) -> Option<u64> {
         self.archived().overflow_id.as_ref().map(|x| x.to_native())
     }
+
+    pub fn locallevel(&self) -> Option<u8> {
+        self.archived().locallevel.as_ref().map(|x| *x)
+    }
 }
