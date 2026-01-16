@@ -59,7 +59,6 @@ impl Insert<'_> {
                     PageId::Main(b) => self.db.main_pages.write_page(b, &cur_page.1)?,
                     PageId::Overflow(id) => self.db.overflow_pages.write_page(id, &cur_page.1)?,
                 }
-                self.db.n_items.fetch_add(1, Ordering::SeqCst);
                 return Ok(None);
             }
         }
@@ -87,8 +86,6 @@ impl Insert<'_> {
                 self.db.overflow_pages.write_page(id, &tail_page.1)?;
             }
         }
-
-        self.db.n_items.fetch_add(1, Ordering::SeqCst);
 
         Ok(None)
     }

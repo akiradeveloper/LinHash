@@ -286,13 +286,17 @@ impl LinHash {
             }
         };
 
+        if old.is_none() {
+            self.core.n_items.fetch_add(1, Ordering::SeqCst);
+        }
+
         self.split_tx.send(()).ok();
 
         Ok(old)
     }
 
     pub fn delete(&self, key: &[u8]) -> Result<Option<Vec<u8>>> {
-        loop {
+        let old = loop {
             let root = self.core.root.read();
             let chain_id = root.calc_page_chain_id(self.core.calc_hash(key));
             let old = op::Delete {
@@ -304,11 +308,17 @@ impl LinHash {
             .exec(key);
 
             match old {
-                Ok(old) => return Ok(old),
+                Ok(old) => break old,
                 Err(Error::LocalLevelMismatch) => continue,
                 e => return e,
             }
+        };
+
+        if old.is_some() {
+            self.core.n_items.fetch_sub(1, Ordering::SeqCst);
         }
+
+        Ok(old)
     }
 
     pub fn flush(&self) -> Result<()> {

@@ -33,9 +33,6 @@ impl Delete<'_> {
                     PageId::Overflow(id) => self.db.overflow_pages.write_page(id, &cur_page.1)?,
                 }
 
-                if removed.is_some() {
-                    self.db.n_items.fetch_sub(1, Ordering::SeqCst);
-                }
                 return Ok(removed);
             }
 
