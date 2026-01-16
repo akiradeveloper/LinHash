@@ -15,7 +15,7 @@ impl Device {
         Ok(Self { io: IO::new(path)? })
     }
 
-    fn into_data(page: Page) -> PageIOBuffer {
+    fn into_data(page: &Page) -> PageIOBuffer {
         let data = encode_page(&page);
         assert!(data.len() <= 4064);
 
@@ -33,7 +33,7 @@ impl Device {
         out
     }
 
-    pub fn write_page(&self, id: u64, page: Page) -> Result<()> {
+    pub fn write_page(&self, id: u64, page: &Page) -> Result<()> {
         let buf = Self::into_data(page);
         self.io.write(&buf, id * 4096)?;
         Ok(())
@@ -111,7 +111,7 @@ mod tests {
         page.insert(vec![1; 32], vec![1; 16]);
         page.insert(vec![2; 32], vec![2; 16]);
 
-        device.write_page(3, page).unwrap();
+        device.write_page(3, &page).unwrap();
 
         let read_page = device.read_page(3).unwrap().unwrap();
         assert_eq!(read_page.kv_pairs.get(&vec![1; 32]), Some(&vec![1; 16]));
@@ -130,7 +130,7 @@ mod tests {
         page.insert(vec![1; 32], vec![1; 16]);
         page.insert(vec![2; 32], vec![2; 16]);
 
-        device.write_page(3, page).unwrap();
+        device.write_page(3, &page).unwrap();
 
         let page_ref = device.read_page_ref(3).unwrap().unwrap();
         assert_eq!(page_ref.get_value(&vec![1; 32]), Some(&vec![1; 16][..]));

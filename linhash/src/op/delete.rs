@@ -22,8 +22,8 @@ impl Delete<'_> {
             if cur_page.1.contains(key) {
                 let removed = cur_page.1.kv_pairs.remove(key);
                 match cur_page.0 {
-                    PageId::Main(b) => self.db.main_pages.write_page(b, cur_page.1)?,
-                    PageId::Overflow(id) => self.db.overflow_pages.write_page(id, cur_page.1)?,
+                    PageId::Main(b) => self.db.main_pages.write_page(b, &cur_page.1)?,
+                    PageId::Overflow(id) => self.db.overflow_pages.write_page(id, &cur_page.1)?,
                 }
 
                 if removed.is_some() {

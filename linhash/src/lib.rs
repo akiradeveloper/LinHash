@@ -72,6 +72,7 @@ fn calc_max_kv_per_page(ksize: usize, vsize: usize) -> u16 {
     n
 }
 
+#[derive(Clone, Copy)]
 enum PageId {
     Main(u64),
     Overflow(u64),
@@ -232,7 +233,6 @@ impl LinHash {
         Ok(old)
     }
 
-    #[cfg(feature = "delete")]
     pub fn delete(&self, key: &[u8]) -> Result<Option<Vec<u8>>> {
         let root = self.core.root.read();
         let main_page_id = root.calc_main_page_id(self.core.calc_hash(key));
