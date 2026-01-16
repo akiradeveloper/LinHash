@@ -6,17 +6,20 @@
 
 Linear Hashing implementation in Rust.
 
+Best suit for metadata store for a database.
+
 ## What's good about Linear Hashing?
 
 - It is a on-disk data structure to maintain key-value mappings.
 - It doesn't use much RAM except temporary buffers.
-- Since queries need only one or two reads from the disk, it is very fast.
-- The query performance isn't affected by the database size.
-- Concurrency is studied in [Concurrency in linear hashing](https://dl.acm.org/doi/10.1145/22952.22954).
+- Since GETs need only one or two reads from the disk, it is very fast.
+- The GET performance isn't affected by the database size.
+- Concurrency is well studied in [Concurrency in linear hashing](https://dl.acm.org/doi/10.1145/22952.22954).
 - The algorithm is simple and elegant.
 
 ## What's good about this implementation?
 
+- GETs are never blocked by other operations except LIST.
 - GETs and INSERTs are fully concurrent.
 - Use rkyv's zero-copy deserialization for fast queries.
 - Use RWF_ATOMIC flag for avoiding torn writes.
@@ -34,11 +37,11 @@ This is **type-checked** by Rust compiler.
 
 | Operation | Root Lock | Bucket Lock |
 | -- | -- | -- |
-| Insert | Read Lock | Selective Lock |
-| Delete | Read Lock | Exclusive Lock |
-| Get | Read Lock | Read Lock |
-| List | Exclusive Lock | |
-| Split | Read Lock | Selective Lock |
+| INSERT | Read Lock | Selective Lock |
+| DELETE | Read Lock | Exclusive Lock |
+| GET | Read Lock | Read Lock |
+| LIST | Exclusive Lock | |
+| SPLIT | Read Lock | Selective Lock |
 
 ## Limitations
 
