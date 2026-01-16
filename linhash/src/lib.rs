@@ -107,7 +107,7 @@ impl Root {
     }
 }
 
-pub struct LinHashCore {
+struct LinHashCore {
     main_pages: Device,
 
     root: RwLock<Root>,
@@ -141,7 +141,7 @@ impl LinHashCore {
         })
     }
 
-    pub fn open(dir: &Path, ksize: usize, vsize: usize) -> Result<Self> {
+    fn open(dir: &Path, ksize: usize, vsize: usize) -> Result<Self> {
         let mut db = Self::new(dir, ksize, vsize)?;
 
         let n_main_pages = op::Restore { db: &mut db }.exec()?;
