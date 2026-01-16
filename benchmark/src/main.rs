@@ -11,6 +11,8 @@ struct CommandArgs {
     vsize: u32,
     #[arg(long)]
     warmup: u64,
+    #[arg(long)]
+    mem: bool,
 }
 
 fn main() {
@@ -18,7 +20,14 @@ fn main() {
     dbg!(&args);
 
     let dir = tempfile::tempdir().unwrap();
-    let db = LinHash::open(dir.path(), args.ksize as usize, args.vsize as usize).unwrap();
+    let dir_path = if args.mem {
+        dir.path()
+    } else {
+        std::fs::remove_dir_all("benchmark-dir").ok();
+        std::fs::create_dir("benchmark-dir").unwrap();
+        std::path::Path::new("benchmark-dir")
+    };
+    let db = LinHash::open(dir_path, args.ksize as usize, args.vsize as usize).unwrap();
 
     let mut keys = HashSet::new();
 
