@@ -211,7 +211,7 @@ impl LinHash {
         op::Get {
             db: &self.core,
             main_page_id,
-            root: &root,
+            root,
             lock: self.core.locks.read_lock(main_page_id),
         }
         .exec(key)

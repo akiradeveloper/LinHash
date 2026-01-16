@@ -4,7 +4,7 @@ pub struct Get<'a> {
     pub db: &'a LinHashCore,
     pub main_page_id: u64,
     #[allow(unused)]
-    pub root: &'a RwLockReadGuard<'a, Root>,
+    pub root: RwLockReadGuard<'a, Root>,
     #[allow(unused)]
     pub lock: lock::ReadLockGuard<'a>,
 }
