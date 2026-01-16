@@ -2,15 +2,12 @@ use super::*;
 
 pub struct ReadLockGuard<'a>(#[allow(unused)] RwLockReadGuard<'a, ()>);
 
-pub struct SelectiveLockGuard<'a>(RwLockReadGuard<'a, ()>, #[allow(unused)] MutexGuard<'a, ()>);
+pub struct SelectiveLockGuard<'a>(
+    #[allow(unused)] RwLockReadGuard<'a, ()>,
+    #[allow(unused)] MutexGuard<'a, ()>,
+);
 
 pub struct ExclusiveLockGuard<'a>(#[allow(unused)] RwLockWriteGuard<'a, ()>);
-
-impl<'a> SelectiveLockGuard<'a> {
-    pub fn downgrade(self) -> ReadLockGuard<'a> {
-        ReadLockGuard(self.0)
-    }
-}
 
 pub struct StripeLock {
     n: usize,

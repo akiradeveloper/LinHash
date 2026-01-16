@@ -3,7 +3,9 @@ use super::*;
 pub struct Insert<'a> {
     pub db: &'a LinHashCore,
     pub main_page_id: u64,
+    #[allow(unused)]
     pub root: RwLockReadGuard<'a, Root>,
+    #[allow(unused)]
     pub lock: lock::SelectiveLockGuard<'a>,
 }
 
