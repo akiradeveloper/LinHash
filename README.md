@@ -37,6 +37,7 @@ This is **type-checked** by Rust compiler.
 | Insert | Read Lock | Selective Lock |
 | Delete | Read Lock | Exclusive Lock |
 | Get | Read Lock | Read Lock |
+| List | Read Lock | |
 | Split | Write Lock | |
 
 ## Limitations

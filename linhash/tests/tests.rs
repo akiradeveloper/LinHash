@@ -1,4 +1,5 @@
 use linhash::*;
+use std::collections::HashSet;
 
 fn vec(i: u64) -> Vec<u8> {
     i.to_le_bytes().to_vec()
@@ -43,6 +44,29 @@ fn test_get() {
         let v = db.get(&vec(i)).unwrap().unwrap();
         assert_eq!(v, vec(i));
     }
+}
+
+#[test]
+fn test_list() {
+    let dir = tempfile::tempdir().unwrap();
+    let db = LinHash::open(dir.path(), 8, 8).unwrap();
+
+    let n = 10000;
+    let range = 0..n;
+
+    let mut expected = HashSet::new();
+
+    for i in range.clone() {
+        db.insert(vec(i), vec(i)).unwrap();
+        expected.insert((vec(i), vec(i)));
+    }
+
+    let mut actual = HashSet::new();
+    for (k, v) in db.list() {
+        actual.insert((k, v));
+    }
+
+    assert_eq!(expected, actual);
 }
 
 #[test]

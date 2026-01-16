@@ -217,6 +217,15 @@ impl LinHash {
         .exec(key)
     }
 
+    pub fn list(&self) -> impl Iterator<Item = (Vec<u8>, Vec<u8>)> {
+        let root = self.core.root.read();
+        op::List {
+            db: &self.core,
+            root,
+        }
+        .exec()
+    }
+
     pub fn insert(&self, key: Vec<u8>, value: Vec<u8>) -> Result<Option<Vec<u8>>> {
         let root = self.core.root.read();
         let main_page_id = root.calc_main_page_id(self.core.calc_hash(&key));

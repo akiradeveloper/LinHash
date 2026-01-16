@@ -13,6 +13,8 @@ keywords = ["linear-hashing", "hash-table", "hashmap"]
 [dependencies]
 crc32fast = "1.5"
 crossbeam = "0.8"
+genawaiter = "0.99.1"
+generator = "0.8.8"
 libc = "0.2.180"
 parking_lot = "0.12"
 rkyv = "0.8"
