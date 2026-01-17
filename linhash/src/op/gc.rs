@@ -7,7 +7,7 @@ pub struct GC<'a> {
 
 impl GC<'_> {
     pub fn exec(self) -> Result<()> {
-        let range = op::TraverseOverflow {
+        let range = util::TraverseOverflow {
             db: self.db,
             root: self.root,
         }

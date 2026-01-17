@@ -13,6 +13,7 @@ use error::Result;
 mod device;
 use device::Device;
 mod op;
+mod util;
 
 mod page;
 use page::*;
@@ -237,12 +238,12 @@ impl LinHashCore {
     fn open(dir: &Path, ksize: usize, vsize: usize) -> Result<Self> {
         let mut db = Self::new(dir, ksize, vsize)?;
 
-        let n_main_pages = op::Restore { db: &mut db }.exec()?;
+        let n_main_pages = util::Restore { db: &mut db }.exec()?;
 
         // Invariant: there are at least two valid main pages.
         if n_main_pages < 2 {
-            op::Init { db: &mut db }.exec()?;
-            op::Restore { db: &mut db }.exec()?;
+            util::Init { db: &mut db }.exec()?;
+            util::Restore { db: &mut db }.exec()?;
         }
 
         Ok(db)

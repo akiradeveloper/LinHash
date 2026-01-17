@@ -9,12 +9,6 @@ pub use get::Get;
 mod insert;
 pub use insert::Insert;
 
-mod restore;
-pub use restore::Restore;
-
-mod init;
-pub use init::Init;
-
 mod delete;
 pub use delete::Delete;
 
@@ -23,6 +17,3 @@ pub use list::List;
 
 mod gc;
 pub use gc::GC;
-
-mod traverse_overflow;
-pub use traverse_overflow::TraverseOverflow;
