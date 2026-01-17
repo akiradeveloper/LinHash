@@ -42,6 +42,10 @@ impl IO {
         fdatasync(&self.fd)?;
         Ok(())
     }
+
+    pub fn free(&self, offset: u64, len: u64) -> Result<()> {
+        Ok(())
+    }
 }
 
 #[cfg(test)]
