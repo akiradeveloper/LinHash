@@ -42,6 +42,7 @@ This is **type-checked** by Rust compiler.
 | GET | Read Lock | Read Lock |
 | LIST | Exclusive Lock | |
 | SPLIT | Read Lock | Selective Lock |
+| GC | Read Lock | |
 
 ## Limitations
 
