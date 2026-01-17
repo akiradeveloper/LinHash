@@ -18,6 +18,7 @@ fn reference_test() {
             update: 10,
             delete_miss: 1,
             delete_hit: 3,
+            len: 5,
         },
     );
 
@@ -38,6 +39,11 @@ fn reference_test() {
                 let v1 = db.delete(&k).unwrap();
                 let v2 = m.remove(&k);
                 assert_eq!(v1, v2);
+            }
+            Op::Len => {
+                let len1 = db.len();
+                let len2 = m.len() as u64;
+                assert_eq!(len1, len2);
             }
         }
     }
