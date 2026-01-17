@@ -1,5 +1,5 @@
 use linhash::*;
-use std::collections::HashSet;
+use std::{collections::HashSet, time::Duration};
 
 fn vec(i: u64) -> Vec<u8> {
     i.to_le_bytes().to_vec()
