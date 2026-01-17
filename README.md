@@ -4,7 +4,7 @@
 [![API doc](https://docs.rs/linhash/badge.svg)](https://docs.rs/linhash)
 ![CI](https://github.com/akiradeveloper/linhash/actions/workflows/ci-master.yml/badge.svg)
 
-Linear Hashing implementation in Rust.
+Concurrent Linear Hashing implementation in Rust.
 
 Best suit for metadata store for a database.
 
