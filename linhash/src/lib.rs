@@ -123,6 +123,55 @@ impl Root {
     }
 }
 
+enum OpEvent {
+    GetHit(u64),
+    GetMiss(u64),
+}
+
+#[derive(Default, Clone, Copy)]
+pub struct Statistics {
+    n_get_miss: u64,
+    n_get_miss_hops: u64,
+    n_get_hit: u64,
+    n_get_hit_hops: u64,
+}
+
+impl Statistics {
+    fn push(&mut self, evt: OpEvent) {
+        match evt {
+            OpEvent::GetHit(hops) => {
+                self.n_get_hit += 1;
+                self.n_get_hit_hops += hops;
+            }
+            OpEvent::GetMiss(hops) => {
+                self.n_get_miss += 1;
+                self.n_get_miss_hops += hops;
+            }
+        }
+    }
+
+    pub fn show(&self) {
+        println!(
+            "GET Hit: {} times, avg hops: {}",
+            self.n_get_hit,
+            if self.n_get_hit == 0 {
+                0.0
+            } else {
+                self.n_get_hit_hops as f64 / self.n_get_hit as f64
+            }
+        );
+        println!(
+            "GET Miss: {} times, avg hops: {}",
+            self.n_get_miss,
+            if self.n_get_miss == 0 {
+                0.0
+            } else {
+                self.n_get_miss_hops as f64 / self.n_get_miss as f64
+            }
+        );
+    }
+}
+
 struct LinHashCore {
     main_pages: Device,
 
@@ -134,6 +183,8 @@ struct LinHashCore {
 
     n_items: AtomicU64,
     max_kv_per_page: u16,
+
+    stat: Mutex<Statistics>,
 }
 
 impl LinHashCore {
@@ -154,6 +205,8 @@ impl LinHashCore {
 
             max_kv_per_page: calc_max_kv_per_page(ksize, vsize),
             n_items: AtomicU64::new(0),
+
+            stat: Mutex::new(Statistics::default()),
         })
     }
 
@@ -325,5 +378,9 @@ impl LinHash {
         self.core.overflow_pages.flush()?;
         self.core.main_pages.flush()?;
         Ok(())
+    }
+
+    pub fn stat(&self) -> Statistics {
+        *self.core.stat.lock()
     }
 }

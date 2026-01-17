@@ -63,6 +63,8 @@ fn main() {
     }
 
     eprintln!("Read: {:?}/ops", sum / n as u32);
+
+    db.stat().show();
 }
 
 fn random(size: usize) -> Vec<u8> {
