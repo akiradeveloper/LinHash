@@ -4,8 +4,8 @@ use std::collections::HashMap;
 enum OpChoice {
     GetMiss,
     GetHit,
-    InsertNew,
-    Update,
+    InsertMiss,
+    InsertHit,
     DeleteHit,
     DeleteMiss,
     Len,
@@ -15,8 +15,8 @@ enum OpChoice {
 pub struct OpRatio {
     pub get_miss: u32,
     pub get_hit: u32,
-    pub insert_new: u32,
-    pub update: u32,
+    pub insert_miss: u32,
+    pub insert_hit: u32,
     pub delete_miss: u32,
     pub delete_hit: u32,
     pub len: u32,
@@ -27,8 +27,8 @@ struct OpChoiceGenerator {
     total: u32,
     top_get_miss: u32,
     top_get_hit: u32,
-    top_insert_new: u32,
-    top_update: u32,
+    top_insert_miss: u32,
+    top_insert_hit: u32,
     top_delete_miss: u32,
     top_delete_hit: u32,
     top_len: u32,
@@ -39,8 +39,8 @@ impl OpChoiceGenerator {
     pub fn new(ratio: OpRatio) -> Self {
         let total = ratio.get_miss
             + ratio.get_hit
-            + ratio.insert_new
-            + ratio.update
+            + ratio.insert_miss
+            + ratio.insert_hit
             + ratio.delete_miss
             + ratio.delete_hit
             + ratio.len
@@ -48,9 +48,9 @@ impl OpChoiceGenerator {
 
         let top_get_miss = ratio.get_miss;
         let top_get_hit = top_get_miss + ratio.get_hit;
-        let top_insert_new = top_get_hit + ratio.insert_new;
-        let top_update = top_insert_new + ratio.update;
-        let top_delete_miss = top_update + ratio.delete_miss;
+        let top_insert_miss = top_get_hit + ratio.insert_miss;
+        let top_insert_hit = top_insert_miss + ratio.insert_hit;
+        let top_delete_miss = top_insert_hit + ratio.delete_miss;
         let top_delete_hit = top_delete_miss + ratio.delete_hit;
         let top_len = top_delete_hit + ratio.len;
         let top_list = top_len + ratio.list;
@@ -59,8 +59,8 @@ impl OpChoiceGenerator {
             total,
             top_get_miss,
             top_get_hit,
-            top_insert_new,
-            top_update,
+            top_insert_miss,
+            top_insert_hit,
             top_delete_miss,
             top_delete_hit,
             top_len,
@@ -79,12 +79,12 @@ impl OpChoiceGenerator {
             return OpChoice::GetHit;
         }
 
-        if r < self.top_insert_new {
-            return OpChoice::InsertNew;
+        if r < self.top_insert_miss {
+            return OpChoice::InsertMiss;
         }
 
-        if r < self.top_update {
-            return OpChoice::Update;
+        if r < self.top_insert_hit {
+            return OpChoice::InsertHit;
         }
 
         if r < self.top_delete_miss {
@@ -189,16 +189,16 @@ impl MapTestGenerator {
                     None => return self.get_op(OpChoice::GetMiss),
                 }
             }
-            InsertNew => {
+            InsertMiss => {
                 let k = self.gen_miss_k();
                 let v = self.v();
                 Op::Insert(k, v)
             }
-            Update => {
+            InsertHit => {
                 let k = self.gen_hit_k();
                 match k {
                     Some(k) => Op::Insert(k, self.v()),
-                    None => return self.get_op(OpChoice::InsertNew),
+                    None => return self.get_op(OpChoice::InsertMiss),
                 }
             }
             DeleteMiss => {
@@ -234,8 +234,8 @@ mod tests {
             OpRatio {
                 get_miss: 20,
                 get_hit: 60,
-                insert_new: 15,
-                update: 10,
+                insert_miss: 15,
+                insert_hit: 10,
                 delete_miss: 1,
                 delete_hit: 3,
                 len: 5,

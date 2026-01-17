@@ -14,8 +14,8 @@ fn reference_test() {
         OpRatio {
             get_miss: 5,
             get_hit: 60,
-            insert_new: 15,
-            update: 10,
+            insert_miss: 15,
+            insert_hit: 10,
             delete_miss: 1,
             delete_hit: 3,
             len: 5,
