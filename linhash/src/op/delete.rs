@@ -5,6 +5,9 @@ pub struct Delete<'a> {
     pub chain_id: PageChainId,
     #[allow(unused)]
     pub root: RwLockReadGuard<'a, Root>,
+    // Why exclusive lock?
+    // If GET and INSERT and DELETE are allowed concurrently, GET may read a k-v pair twice.
+    // This is almost impossible in practice but possible if GET process stalls for a very long time.
     #[allow(unused)]
     pub lock: lock::ExclusiveLockGuard<'a>,
 }
