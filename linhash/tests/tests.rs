@@ -68,8 +68,35 @@ fn test_list() {
 
     expected.sort();
     actual.sort();
-    assert_eq!(expected.len(), actual.len());
-    assert_eq!(expected, actual);
+    assert_eq!(actual.len(), expected.len());
+    assert_eq!(actual, expected);
+}
+
+#[test]
+fn test_list_after_every_insert() {
+    let dir = tempfile::tempdir().unwrap();
+    let db = LinHash::open(dir.path(), 8, 8).unwrap();
+
+    let n = 10000;
+    let range = 0..n;
+
+    let mut expected = vec![];
+
+    for i in range.clone() {
+        db.insert(vec(i), vec(i)).unwrap();
+
+        expected.push((vec(i), vec(i)));
+
+        let mut actual = vec![];
+        for (k, v) in db.list() {
+            actual.push((k, v));
+        }
+
+        expected.sort();
+        actual.sort();
+        assert_eq!(actual.len(), expected.len());
+        assert_eq!(actual, expected);
+    }
 }
 
 #[test]
@@ -101,8 +128,8 @@ fn test_list_after_delete() {
 
     expected.sort();
     actual.sort();
-    assert_eq!(expected.len(), actual.len());
-    assert_eq!(expected, actual);
+    assert_eq!(actual.len(), expected.len());
+    assert_eq!(actual, expected);
 }
 
 #[test]
