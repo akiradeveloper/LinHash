@@ -15,7 +15,7 @@ impl List<'_> {
 
             loop {
                 // Stop if valid main page does not exist.
-                let Ok(Some(page)) = self.db.main_pages.read_page(page_id) else {
+                let Ok(Some(page)) = self.db.main_pages.read_page_ref(page_id) else {
                     return;
                 };
 
@@ -34,21 +34,22 @@ impl List<'_> {
 
 struct ListOnce<'a> {
     pub db: &'a LinHashCore,
-    pub page: Page,
+    pub page: PageRef,
 }
 
 impl ListOnce<'_> {
     pub fn exec(self) -> impl Iterator<Item = (Vec<u8>, Vec<u8>)> {
         Gen::new(move |co: Co<(Vec<u8>, Vec<u8>)>| async move {
             let mut cur_page = self.page;
+
             loop {
-                for (k, v) in cur_page.kv_pairs {
-                    co.yield_((k, v)).await
+                for (k, v) in cur_page.kv_pairs() {
+                    co.yield_((k.to_vec(), v.to_vec())).await
                 }
 
-                match cur_page.overflow_id {
+                match cur_page.overflow_id() {
                     Some(id) => {
-                        let Ok(Some(next_page)) = self.db.overflow_pages.read_page(id) else {
+                        let Ok(Some(next_page)) = self.db.overflow_pages.read_page_ref(id) else {
                             return;
                         };
                         cur_page = next_page;

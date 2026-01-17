@@ -34,6 +34,13 @@ impl PageRef {
         page.kv_pairs.get(key).map(|v| v.as_slice())
     }
 
+    pub fn kv_pairs(&self) -> impl Iterator<Item = (&[u8], &[u8])> {
+        let page = self.archived();
+        page.kv_pairs
+            .iter()
+            .map(|(k, v)| (k.as_slice(), v.as_slice()))
+    }
+
     pub fn overflow_id(&self) -> Option<u64> {
         self.archived().overflow_id.as_ref().map(|x| x.to_native())
     }
