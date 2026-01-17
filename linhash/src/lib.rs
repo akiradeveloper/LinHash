@@ -277,6 +277,21 @@ impl LinHash {
         let core = LinHashCore::open(dir, ksize, vsize)?;
         let core = Arc::new(core);
 
+        std::thread::spawn({
+            let core = Arc::clone(&core);
+            move || {
+                loop {
+                    std::thread::sleep(std::time::Duration::from_secs(1));
+                    op::GC {
+                        db: &core,
+                        root: core.root.read(),
+                    }
+                    .exec()
+                    .ok();
+                }
+            }
+        });
+
         let (tx, rx) = crossbeam::channel::unbounded();
         std::thread::spawn({
             let core = Arc::clone(&core);

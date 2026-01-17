@@ -94,8 +94,10 @@ impl Device {
         Ok(())
     }
 
-    pub fn free_page(&self, id: u64) -> Result<()> {
-        self.io.free(id * 4096, 4096)?;
+    /// Free the storage blocks of pages in [start, end).
+    pub fn free_page_range(&self, start: u64, end: u64) -> Result<()> {
+        let n_pages = end - start;
+        self.io.free(start * 4096, n_pages * 4096)?;
         Ok(())
     }
 }

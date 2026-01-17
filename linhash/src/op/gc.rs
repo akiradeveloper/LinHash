@@ -6,20 +6,15 @@ pub struct GC<'a> {
 }
 
 impl GC<'_> {
-    pub fn exec(self) -> Result<u64> {
-        let mut n_deleted = 0;
-
+    pub fn exec(self) -> Result<()> {
         let range = op::TraverseOverflow {
             db: self.db,
             root: self.root,
         }
         .exec()?;
 
-        for id in 0..range.start {
-            self.db.overflow_pages.free_page(id)?;
-            n_deleted += 1;
-        }
+        self.db.overflow_pages.free_page_range(0, range.start)?;
 
-        Ok(n_deleted)
+        Ok(())
     }
 }

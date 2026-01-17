@@ -44,17 +44,6 @@ impl Restore<'_> {
         unreachable!()
     }
 
-    /// Returns `next_overflow_id`
-    fn traverse_overflow_pages(&self) -> Result<u64> {
-        for i in 0.. {
-            let Some(_) = self.db.overflow_pages.read_page(i)? else {
-                return Ok(i);
-            };
-        }
-
-        unreachable!()
-    }
-
     /// Returns `n_items`
     fn traverse_all_pages(&self, main_page_until: u64) -> Result<u64> {
         let mut n_items = 0;
