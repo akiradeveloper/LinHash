@@ -73,6 +73,39 @@ fn test_list() {
 }
 
 #[test]
+fn test_list_after_delete() {
+    let dir = tempfile::tempdir().unwrap();
+    let db = LinHash::open(dir.path(), 8, 8).unwrap();
+
+    let n = 10000;
+
+    let mut expected = vec![];
+
+    for i in 0..n {
+        db.insert(vec(i), vec(i)).unwrap();
+    }
+
+    for i in 0..n / 2 {
+        let removed = db.delete(&vec(i)).unwrap();
+        assert_eq!(removed, Some(vec(i)));
+    }
+
+    for i in n / 2..n {
+        expected.push((vec(i), vec(i)));
+    }
+
+    let mut actual = vec![];
+    for (k, v) in db.list() {
+        actual.push((k, v));
+    }
+
+    expected.sort();
+    actual.sort();
+    assert_eq!(expected.len(), actual.len());
+    assert_eq!(expected, actual);
+}
+
+#[test]
 fn test_update() {
     let dir = tempfile::tempdir().unwrap();
     let db = LinHash::open(dir.path(), 8, 8).unwrap();
