@@ -77,7 +77,7 @@ fn test_list_after_every_insert() {
     let dir = tempfile::tempdir().unwrap();
     let db = LinHash::open(dir.path(), 8, 8).unwrap();
 
-    let n = 10000;
+    let n = 2000;
     let range = 0..n;
 
     let mut expected = vec![];

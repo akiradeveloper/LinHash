@@ -282,7 +282,6 @@ impl LinHash {
             let core = Arc::clone(&core);
             move || {
                 while let Ok(()) = rx.recv() {
-                    std::thread::sleep(std::time::Duration::from_millis(10));
                     if core.load_factor() > 0.8 {
                         let root = core.root.read();
 
