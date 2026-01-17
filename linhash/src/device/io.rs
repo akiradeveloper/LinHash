@@ -1,6 +1,7 @@
 use super::*;
 
 use rustix::fd::OwnedFd;
+use rustix::fs::{FallocateFlags, fallocate};
 use rustix::fs::{Mode, OFlags, fdatasync, open};
 use rustix::io::{ReadWriteFlags, preadv2, pwritev2};
 
@@ -40,6 +41,16 @@ impl IO {
 
     pub fn flush(&self) -> Result<()> {
         fdatasync(&self.fd)?;
+        Ok(())
+    }
+
+    pub fn free(&self, offset: u64, len: u64) -> Result<()> {
+        fallocate(
+            &self.fd,
+            FallocateFlags::PUNCH_HOLE | FallocateFlags::KEEP_SIZE,
+            offset,
+            len,
+        )?;
         Ok(())
     }
 }

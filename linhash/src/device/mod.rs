@@ -93,6 +93,11 @@ impl Device {
         self.io.flush()?;
         Ok(())
     }
+
+    pub fn free_page(&self, id: u64) -> Result<()> {
+        self.io.free(id * 4096, 4096)?;
+        Ok(())
+    }
 }
 
 #[cfg(test)]

@@ -13,7 +13,14 @@ impl Restore<'_> {
         }
 
         let (next_split_main_page_id, main_base_level) = calc_base_level(n_main_pages);
-        let next_overflow_id = self.traverse_overflow_pages()?;
+
+        let next_overflow_id = {
+            let root = self.db.root.read();
+            let travere_range = op::TraverseOverflow { db: self.db, root }.exec()?;
+
+            travere_range.end
+        };
+
         let n_items = self.traverse_all_pages(n_main_pages)?;
 
         self.db.root.write().base_level = main_base_level;

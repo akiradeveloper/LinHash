@@ -20,3 +20,9 @@ pub use delete::Delete;
 
 mod list;
 pub use list::List;
+
+mod gc;
+pub use gc::GC;
+
+mod traverse_overflow;
+pub use traverse_overflow::TraverseOverflow;
