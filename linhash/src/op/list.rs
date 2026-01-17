@@ -10,7 +10,7 @@ pub struct List<'a> {
 
 impl List<'_> {
     pub fn exec(self) -> impl Iterator<Item = (Vec<u8>, Vec<u8>)> {
-        Gen::new( |co: Co<(Vec<u8>, Vec<u8>)>| async move {
+        Gen::new(|co: Co<(Vec<u8>, Vec<u8>)>| async move {
             // We have to hold the root lock in the generator
             // or the lock will be dropped when the iterator is returned.
             let _root = self.root;

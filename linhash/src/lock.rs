@@ -112,4 +112,12 @@ mod tests {
         let g2 = lock.try_exclusive_lock(0);
         assert_eq!(g2.is_none(), true);
     }
+
+    #[test]
+    fn test_exclusive_exclusive_fail() {
+        let lock = StripeLock::new(4);
+        let g1 = lock.exclusive_lock(0);
+        let g2 = lock.try_exclusive_lock(0);
+        assert_eq!(g2.is_none(), true);
+    }
 }
