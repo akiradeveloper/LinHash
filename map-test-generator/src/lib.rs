@@ -9,6 +9,7 @@ enum OpChoice {
     DeleteHit,
     DeleteMiss,
     Len,
+    List,
 }
 
 pub struct OpRatio {
@@ -19,6 +20,7 @@ pub struct OpRatio {
     pub delete_miss: u32,
     pub delete_hit: u32,
     pub len: u32,
+    pub list: u32,
 }
 
 struct OpChoiceGenerator {
@@ -30,6 +32,7 @@ struct OpChoiceGenerator {
     top_delete_miss: u32,
     top_delete_hit: u32,
     top_len: u32,
+    top_list: u32,
 }
 
 impl OpChoiceGenerator {
@@ -40,7 +43,8 @@ impl OpChoiceGenerator {
             + ratio.update
             + ratio.delete_miss
             + ratio.delete_hit
-            + ratio.len;
+            + ratio.len
+            + ratio.list;
 
         let top_get_miss = ratio.get_miss;
         let top_get_hit = top_get_miss + ratio.get_hit;
@@ -49,6 +53,7 @@ impl OpChoiceGenerator {
         let top_delete_miss = top_update + ratio.delete_miss;
         let top_delete_hit = top_delete_miss + ratio.delete_hit;
         let top_len = top_delete_hit + ratio.len;
+        let top_list = top_len + ratio.list;
 
         Self {
             total,
@@ -59,6 +64,7 @@ impl OpChoiceGenerator {
             top_delete_miss,
             top_delete_hit,
             top_len,
+            top_list,
         }
     }
 
@@ -89,7 +95,11 @@ impl OpChoiceGenerator {
             return OpChoice::DeleteHit;
         }
 
-        OpChoice::Len
+        if r < self.top_len {
+            return OpChoice::Len;
+        }
+
+        OpChoice::List
     }
 }
 
@@ -99,6 +109,7 @@ pub enum Op {
     Insert(Vec<u8>, Vec<u8>),
     Delete(Vec<u8>),
     Len,
+    List,
 }
 
 pub struct MapTestGenerator {
@@ -130,6 +141,7 @@ impl MapTestGenerator {
             }
             Op::Get(_) => {}
             Op::Len => {}
+            Op::List => {}
         }
         op
     }
@@ -201,6 +213,7 @@ impl MapTestGenerator {
                 }
             }
             Len => Op::Len,
+            List => Op::List,
         }
     }
 }
@@ -226,6 +239,7 @@ mod tests {
                 delete_miss: 1,
                 delete_hit: 3,
                 len: 5,
+                list: 1,
             },
         );
         for _ in 0..10000 {

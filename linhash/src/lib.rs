@@ -124,8 +124,12 @@ impl Root {
 }
 
 enum OpEvent {
-    GetHit(u64),
     GetMiss(u64),
+    GetHit(u64),
+    InsertMiss,
+    InsertHit,
+    DeleteMiss,
+    DeleteHit,
 }
 
 #[derive(Default, Clone, Copy)]
@@ -134,32 +138,39 @@ pub struct Statistics {
     n_get_miss_hops: u64,
     n_get_hit: u64,
     n_get_hit_hops: u64,
+    n_insert_miss: u64,
+    n_insert_hit: u64,
+    n_delete_miss: u64,
+    n_delete_hit: u64,
 }
 
 impl Statistics {
     fn push(&mut self, evt: OpEvent) {
         match evt {
+            OpEvent::GetMiss(hops) => {
+                self.n_get_miss += 1;
+                self.n_get_miss_hops += hops;
+            }
             OpEvent::GetHit(hops) => {
                 self.n_get_hit += 1;
                 self.n_get_hit_hops += hops;
             }
-            OpEvent::GetMiss(hops) => {
-                self.n_get_miss += 1;
-                self.n_get_miss_hops += hops;
+            OpEvent::InsertMiss => {
+                self.n_insert_miss += 1;
+            }
+            OpEvent::InsertHit => {
+                self.n_insert_hit += 1;
+            }
+            OpEvent::DeleteMiss => {
+                self.n_delete_miss += 1;
+            }
+            OpEvent::DeleteHit => {
+                self.n_delete_hit += 1;
             }
         }
     }
 
     pub fn show(&self) {
-        println!(
-            "GET Hit: {} times, avg hops: {}",
-            self.n_get_hit,
-            if self.n_get_hit == 0 {
-                0.0
-            } else {
-                self.n_get_hit_hops as f64 / self.n_get_hit as f64
-            }
-        );
         println!(
             "GET Miss: {} times, avg hops: {}",
             self.n_get_miss,
@@ -169,6 +180,19 @@ impl Statistics {
                 self.n_get_miss_hops as f64 / self.n_get_miss as f64
             }
         );
+        println!(
+            "GET Hit: {} times, avg hops: {}",
+            self.n_get_hit,
+            if self.n_get_hit == 0 {
+                0.0
+            } else {
+                self.n_get_hit_hops as f64 / self.n_get_hit as f64
+            }
+        );
+        println!("INSERT Miss: {} times", self.n_insert_miss);
+        println!("INSERT Hit: {} times", self.n_insert_hit);
+        println!("DELETE Miss: {} times", self.n_delete_miss);
+        println!("DELETE Hit: {} times", self.n_delete_hit);
     }
 }
 
@@ -340,7 +364,10 @@ impl LinHash {
         };
 
         if old.is_none() {
+            self.core.stat.lock().push(OpEvent::InsertMiss);
             self.core.n_items.fetch_add(1, Ordering::SeqCst);
+        } else {
+            self.core.stat.lock().push(OpEvent::InsertHit);
         }
 
         self.split_tx.send(()).ok();
@@ -369,6 +396,9 @@ impl LinHash {
 
         if old.is_some() {
             self.core.n_items.fetch_sub(1, Ordering::SeqCst);
+            self.core.stat.lock().push(OpEvent::DeleteHit);
+        } else {
+            self.core.stat.lock().push(OpEvent::DeleteMiss);
         }
 
         Ok(old)

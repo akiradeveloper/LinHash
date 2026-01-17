@@ -54,18 +54,21 @@ fn test_list() {
     let n = 10000;
     let range = 0..n;
 
-    let mut expected = HashSet::new();
+    let mut expected = vec![];
 
     for i in range.clone() {
         db.insert(vec(i), vec(i)).unwrap();
-        expected.insert((vec(i), vec(i)));
+        expected.push((vec(i), vec(i)));
     }
 
-    let mut actual = HashSet::new();
+    let mut actual = vec![];
     for (k, v) in db.list() {
-        actual.insert((k, v));
+        actual.push((k, v));
     }
 
+    expected.sort();
+    actual.sort();
+    assert_eq!(expected.len(), actual.len());
     assert_eq!(expected, actual);
 }
 

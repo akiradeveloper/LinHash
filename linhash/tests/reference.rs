@@ -19,6 +19,7 @@ fn reference_test() {
             delete_miss: 1,
             delete_hit: 3,
             len: 5,
+            list: 1,
         },
     );
 
@@ -44,6 +45,20 @@ fn reference_test() {
                 let len1 = db.len();
                 let len2 = m.len() as u64;
                 assert_eq!(len1, len2);
+            }
+            Op::List => {
+                let mut list1: Vec<(Vec<u8>, Vec<u8>)> = db.list().collect();
+                list1.sort();
+                let mut list2: Vec<(Vec<u8>, Vec<u8>)> =
+                    m.iter().map(|(k, v)| (k.clone(), v.clone())).collect();
+                list2.sort();
+
+                // FIXME fails!!!
+
+                // For debugging.
+                db.stat().show();
+                assert_eq!(list1.len(), list2.len());
+                assert_eq!(list1, list2);
             }
         }
     }
