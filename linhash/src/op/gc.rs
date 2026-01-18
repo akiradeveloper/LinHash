@@ -2,7 +2,7 @@ use super::*;
 
 pub struct GC<'a> {
     pub db: &'a LinHashCore,
-    pub root: RwLockReadGuard<'a, Root>,
+    pub root: Root,
 }
 
 impl GC<'_> {

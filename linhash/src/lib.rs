@@ -286,7 +286,7 @@ impl LinHash {
                     std::thread::sleep(std::time::Duration::from_secs(1));
                     op::GC {
                         db: &core,
-                        root: core.root.read(),
+                        root: *core.root.read(),
                     }
                     .exec()
                     .ok();

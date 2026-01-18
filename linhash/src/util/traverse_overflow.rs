@@ -9,7 +9,7 @@ pub struct OverflowRange {
 /// Traverse all main pages and find the range of overflow pages used.
 pub struct TraverseOverflow<'a> {
     pub db: &'a LinHashCore,
-    pub root: RwLockReadGuard<'a, Root>,
+    pub root: Root,
 }
 
 impl TraverseOverflow<'_> {

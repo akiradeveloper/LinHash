@@ -15,9 +15,7 @@ impl Restore<'_> {
         let root = calc_base_level(n_main_pages);
 
         let next_overflow_id = {
-            let root = self.db.root.read();
             let travere_range = util::TraverseOverflow { db: self.db, root }.exec()?;
-
             travere_range.end
         };
 
