@@ -10,9 +10,8 @@ fn test_restore() {
     let db = LinHash::open(dir.path(), 8, 8).unwrap();
 
     let n = 10000;
-    let range = 0..n;
 
-    for i in range.clone() {
+    for i in 0..n {
         db.insert(vec(i), vec(i)).unwrap();
     }
 
@@ -20,7 +19,11 @@ fn test_restore() {
 
     assert_eq!(fh.len(), n as u64);
 
-    for i in range {
+    for i in n..2*n {
+        fh.insert(vec(i), vec(i)).unwrap();
+    }
+
+    for i in 0..2*n {
         let v = fh.get(&vec(i)).unwrap().unwrap();
         assert_eq!(v, vec(i));
     }
