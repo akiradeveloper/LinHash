@@ -290,6 +290,8 @@ impl LinHash {
             move || {
                 loop {
                     crossbeam::select! {
+                        // GC thread should be dropped when LinHash instance is dropped.
+                        // Without explicit termination, it runs forever and destroys the database.
                         recv(gc_shutdown_rx) -> _ => break,
                         recv(crossbeam::channel::after(Duration::from_secs(1))) -> _ => {
                             let root = core.root.read();
