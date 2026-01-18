@@ -19,11 +19,11 @@ fn test_restore() {
 
     assert_eq!(fh.len(), n as u64);
 
-    for i in n..2*n {
+    for i in n..2 * n {
         fh.insert(vec(i), vec(i)).unwrap();
     }
 
-    for i in 0..2*n {
+    for i in 0..2 * n {
         let v = fh.get(&vec(i)).unwrap().unwrap();
         assert_eq!(v, vec(i));
     }

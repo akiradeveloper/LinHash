@@ -88,6 +88,7 @@ struct PageChainId {
     locallevel: u8,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq)]
 struct Root {
     base_level: u8,
     next_split_main_page_id: u64,

@@ -12,7 +12,7 @@ impl Restore<'_> {
             return Ok(0);
         }
 
-        let (next_split_main_page_id, main_base_level) = calc_base_level(n_main_pages);
+        let root = calc_base_level(n_main_pages);
 
         let next_overflow_id = {
             let root = self.db.root.read();
@@ -23,8 +23,7 @@ impl Restore<'_> {
 
         let n_items = self.traverse_all_pages(n_main_pages)?;
 
-        self.db.root.write().base_level = main_base_level;
-        self.db.root.write().next_split_main_page_id = next_split_main_page_id;
+        *self.db.root.write() = root;
         self.db
             .next_overflow_id
             .store(next_overflow_id, Ordering::SeqCst);
@@ -67,25 +66,36 @@ impl Restore<'_> {
 }
 
 /// Returns `next_split_main_page_id` and `main_base_level`
-pub fn calc_base_level(n_main_pages: u64) -> (u64, u8) {
+pub fn calc_base_level(n_main_pages: u64) -> Root {
     let bit_width = 64 - n_main_pages.leading_zeros();
     let msb = 1 << (bit_width - 1);
     let next_split_id = n_main_pages - msb;
-    (next_split_id, bit_width as u8 - 1)
+
+    Root {
+        next_split_main_page_id: next_split_id,
+        base_level: bit_width as u8 - 1,
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
+    fn root(next_split_main_page_id: u64, base_level: u8) -> Root {
+        Root {
+            next_split_main_page_id,
+            base_level,
+        }
+    }
+
     #[test]
     fn test_calc_base_level() {
-        assert_eq!(calc_base_level(2), (0, 1));
-        assert_eq!(calc_base_level(3), (1, 1));
-        assert_eq!(calc_base_level(4), (0, 2));
-        assert_eq!(calc_base_level(5), (1, 2));
-        assert_eq!(calc_base_level(6), (2, 2));
-        assert_eq!(calc_base_level(7), (3, 2));
-        assert_eq!(calc_base_level(8), (0, 3));
+        assert_eq!(calc_base_level(2), root(0, 1));
+        assert_eq!(calc_base_level(3), root(1, 1));
+        assert_eq!(calc_base_level(4), root(0, 2));
+        assert_eq!(calc_base_level(5), root(1, 2));
+        assert_eq!(calc_base_level(6), root(2, 2));
+        assert_eq!(calc_base_level(7), root(3, 2));
+        assert_eq!(calc_base_level(8), root(0, 3));
     }
 }
