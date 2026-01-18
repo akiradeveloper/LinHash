@@ -4,6 +4,7 @@ use std::ops::Range;
 use std::path::Path;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicU64, Ordering};
+use std::time::Duration;
 
 mod error;
 mod lock;
@@ -271,7 +272,9 @@ impl LinHashCore {
 
 pub struct LinHash {
     core: Arc<LinHashCore>,
-    split_tx: crossbeam::channel::Sender<()>,
+    gc_shutdown_tx: Option<crossbeam::channel::Sender<()>>,
+    split_tx: Option<crossbeam::channel::Sender<()>>,
+    spawn_handles: Vec<std::thread::JoinHandle<()>>,
 }
 
 impl LinHash {
@@ -279,23 +282,26 @@ impl LinHash {
         let core = LinHashCore::open(dir, ksize, vsize)?;
         let core = Arc::new(core);
 
-        std::thread::spawn({
+        let mut spawn_handles = vec![];
+
+        let (gc_shutdown_tx, gc_shutdown_rx) = crossbeam::channel::unbounded::<()>();
+        spawn_handles.push(std::thread::spawn({
             let core = Arc::clone(&core);
             move || {
                 loop {
-                    std::thread::sleep(std::time::Duration::from_secs(1));
-                    op::GC {
-                        db: &core,
-                        root: *core.root.read(),
+                    crossbeam::select! {
+                        recv(gc_shutdown_rx) -> _ => break,
+                        recv(crossbeam::channel::after(Duration::from_secs(1))) -> _ => {
+                            let root = core.root.read();
+                            op::GC { db: &core, root: *root }.exec().ok();
+                        }
                     }
-                    .exec()
-                    .ok();
                 }
             }
-        });
+        }));
 
         let (tx, rx) = crossbeam::channel::unbounded();
-        std::thread::spawn({
+        spawn_handles.push(std::thread::spawn({
             let core = Arc::clone(&core);
             move || {
                 while let Ok(()) = rx.recv() {
@@ -322,9 +328,14 @@ impl LinHash {
                     }
                 }
             }
-        });
+        }));
 
-        Ok(Self { core, split_tx: tx })
+        Ok(Self {
+            core,
+            gc_shutdown_tx: Some(gc_shutdown_tx),
+            split_tx: Some(tx),
+            spawn_handles,
+        })
     }
 
     pub fn len(&self) -> u64 {
@@ -386,7 +397,7 @@ impl LinHash {
             self.core.stat.lock().push(OpEvent::InsertHit);
         }
 
-        self.split_tx.send(()).ok();
+        self.split_tx.as_ref().unwrap().send(()).ok();
 
         Ok(old)
     }
@@ -428,5 +439,18 @@ impl LinHash {
 
     pub fn stat(&self) -> Statistics {
         *self.core.stat.lock()
+    }
+}
+
+impl Drop for LinHash {
+    fn drop(&mut self) {
+        drop(self.split_tx.take());
+
+        self.gc_shutdown_tx.as_ref().unwrap().send(()).ok();
+        drop(self.gc_shutdown_tx.take());
+
+        for handle in self.spawn_handles.drain(..) {
+            handle.join().ok();
+        }
     }
 }

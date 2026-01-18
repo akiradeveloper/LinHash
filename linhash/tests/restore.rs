@@ -14,17 +14,18 @@ fn test_restore() {
     for i in 0..n {
         db.insert(vec(i), vec(i)).unwrap();
     }
+    drop(db);
 
-    let fh = LinHash::open(dir.path(), 8, 8).unwrap();
+    let db = LinHash::open(dir.path(), 8, 8).unwrap();
 
-    assert_eq!(fh.len(), n as u64);
+    assert_eq!(db.len(), n as u64);
 
     for i in n..2 * n {
-        fh.insert(vec(i), vec(i)).unwrap();
+        db.insert(vec(i), vec(i)).unwrap();
     }
 
     for i in 0..2 * n {
-        let v = fh.get(&vec(i)).unwrap().unwrap();
+        let v = db.get(&vec(i)).unwrap().unwrap();
         assert_eq!(v, vec(i));
     }
 }
