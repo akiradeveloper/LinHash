@@ -16,9 +16,8 @@ fn test_insert() {
     let db = LinHash::open(dir.path(), 8, 8).unwrap();
 
     let n = 10000;
-    let range = 0..n;
 
-    for i in range.clone() {
+    for i in 0..n {
         db.insert(vec(i), vec(i)).unwrap();
     }
 
@@ -31,15 +30,14 @@ fn test_get() {
     let db = LinHash::open(dir.path(), 8, 8).unwrap();
 
     let n = 10000;
-    let range = 0..n;
 
-    for i in range.clone() {
+    for i in 0..n {
         db.insert(vec(i), vec(i)).unwrap();
     }
 
     assert_eq!(db.len(), n as u64);
 
-    for i in range {
+    for i in 0..n {
         let v = db.get(&vec(i)).unwrap().unwrap();
         assert_eq!(v, vec(i));
     }
@@ -51,11 +49,10 @@ fn test_list() {
     let db = LinHash::open(dir.path(), 8, 8).unwrap();
 
     let n = 10000;
-    let range = 0..n;
 
     let mut expected = vec![];
 
-    for i in range.clone() {
+    for i in 0..n {
         db.insert(vec(i), vec(i)).unwrap();
         expected.push((vec(i), vec(i)));
     }
@@ -77,11 +74,10 @@ fn test_list_after_every_insert() {
     let db = LinHash::open(dir.path(), 8, 8).unwrap();
 
     let n = 2000;
-    let range = 0..n;
 
     let mut expected = vec![];
 
-    for i in range.clone() {
+    for i in 0..n {
         db.insert(vec(i), vec(i)).unwrap();
 
         expected.push((vec(i), vec(i)));
@@ -137,19 +133,18 @@ fn test_update() {
     let db = LinHash::open(dir.path(), 8, 8).unwrap();
 
     let n = 10000;
-    let range = 0..n;
 
-    for i in range.clone() {
+    for i in 0..n {
         assert_eq!(db.insert(vec(i), vec(i)).unwrap(), None);
     }
 
-    for i in range.clone() {
+    for i in 0..n {
         assert_eq!(db.insert(vec(i), vec(i + 1)).unwrap(), Some(vec(i)));
     }
 
     assert_eq!(db.len(), n as u64);
 
-    for i in range {
+    for i in 0..n {
         let v = db.get(&vec(i)).unwrap().unwrap();
         assert_eq!(v, vec(i + 1));
     }
@@ -161,20 +156,19 @@ fn test_delete() {
     let db = LinHash::open(dir.path(), 8, 8).unwrap();
 
     let n = 10000;
-    let range = 0..n;
 
-    for i in range.clone() {
+    for i in 0..n {
         db.insert(vec(i), vec(i)).unwrap();
     }
 
-    for i in range.clone() {
+    for i in 0..n {
         let removed = db.delete(&vec(i)).unwrap();
         assert_eq!(removed, Some(vec(i)));
     }
 
     assert_eq!(db.len(), 0);
 
-    for i in range {
+    for i in 0..n {
         let v = db.get(&vec(i)).unwrap();
         assert!(v.is_none());
     }
