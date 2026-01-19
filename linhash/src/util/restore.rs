@@ -7,7 +7,7 @@ pub struct Restore<'a> {
 impl Restore<'_> {
     /// Retruns the number of valid main pages.
     pub fn exec(self) -> Result<u64> {
-        let n_main_pages = self.traverse_main_pages()?;
+        let n_main_pages = util::TraverseMain { db: self.db }.exec()?;
         if n_main_pages < 2 {
             return Ok(0);
         }
@@ -28,17 +28,6 @@ impl Restore<'_> {
         self.db.n_items.store(n_items, Ordering::SeqCst);
 
         Ok(n_main_pages)
-    }
-
-    /// Returns the number of valid main pages
-    fn traverse_main_pages(&self) -> Result<u64> {
-        for i in 0.. {
-            let Some(_) = self.db.main_pages.read_page(i)? else {
-                return Ok(i);
-            };
-        }
-
-        unreachable!()
     }
 
     /// Returns `n_items`
