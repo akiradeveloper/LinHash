@@ -28,7 +28,7 @@ impl IO {
     }
 
     pub fn write(&self, buf: &PageIOBuffer, offset: u64) -> Result<()> {
-        let atomic_flag = ReadWriteFlags::from_bits(libc::RWF_ATOMIC as u32).unwrap();
+        let atomic_flag = ReadWriteFlags::from_bits_retain(libc::RWF_ATOMIC as u32);
 
         let mut flags = ReadWriteFlags::empty();
         flags.insert(atomic_flag);
