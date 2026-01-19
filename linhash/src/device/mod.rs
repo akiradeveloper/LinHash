@@ -8,41 +8,45 @@ const HEADER_LEN: usize = 32;
 
 pub struct Device {
     io: IO,
+    pagesize: usize,
 }
 
 impl Device {
-    pub fn new(path: &Path) -> Result<Self> {
-        Ok(Self { io: IO::new(path)? })
+    pub fn new(path: &Path, pagesize: usize) -> Result<Self> {
+        Ok(Self {
+            io: IO::new(path)?,
+            pagesize,
+        })
     }
 
-    fn into_data(page: &Page) -> PageIOBuffer {
+    fn into_data(&self, page: &Page) -> PageIOBuffer {
         let data = encode_page(&page);
-        assert!(data.len() <= 4096 - HEADER_LEN);
+        assert!(data.len() <= self.pagesize - HEADER_LEN);
 
         let crc = crc32fast::hash(&data);
         let data_len = data.len() as u32;
 
-        let mut out = PageIOBuffer::with_capacity(4096);
+        let mut out = PageIOBuffer::with_capacity(self.pagesize);
         out.extend_from_slice(&MAGIC.to_le_bytes()); // 4
         out.extend_from_slice(&crc.to_le_bytes()); // 4
         out.extend_from_slice(&data_len.to_le_bytes()); // 4
         out.extend_from_slice(&[0; HEADER_LEN - 12]); // Padding
         out.extend_from_slice(&data);
-        out.resize(4096, 0);
+        out.resize(self.pagesize, 0);
 
         out
     }
 
     pub fn write_page(&self, id: u64, page: &Page) -> Result<()> {
-        let buf = Self::into_data(page);
-        self.io.write(&buf, id * 4096)?;
+        let buf = self.into_data(page);
+        self.io.write(&buf, id * self.pagesize as u64)?;
         Ok(())
     }
 
     pub fn read_page(&self, id: u64) -> Result<Option<Page>> {
-        let mut buf = PageIOBuffer::with_capacity(4096);
-        buf.resize(4096, 0);
-        self.io.read(&mut buf, id * 4096)?;
+        let mut buf = PageIOBuffer::with_capacity(self.pagesize);
+        buf.resize(self.pagesize, 0);
+        self.io.read(&mut buf, id * self.pagesize as u64)?;
 
         let stored_magic = u32::from_le_bytes(buf[0..4].try_into().unwrap());
         if stored_magic != MAGIC {
@@ -65,10 +69,10 @@ impl Device {
     }
 
     pub fn read_page_ref(&self, id: u64) -> Result<Option<PageRef>> {
-        let mut buf = PageIOBuffer::with_capacity(4096);
-        buf.resize(4096, 0);
+        let mut buf = PageIOBuffer::with_capacity(self.pagesize);
+        buf.resize(self.pagesize, 0);
 
-        self.io.read(&mut buf, id * 4096)?;
+        self.io.read(&mut buf, id * self.pagesize as u64)?;
 
         let stored_magic = u32::from_le_bytes(buf[0..4].try_into().unwrap());
         if stored_magic != MAGIC {
@@ -97,7 +101,8 @@ impl Device {
     /// Free the storage blocks of pages in [start, end).
     pub fn free_page_range(&self, start: u64, end: u64) -> Result<()> {
         let n_pages = end - start;
-        self.io.free(start * 4096, n_pages * 4096)?;
+        self.io
+            .free(start * self.pagesize as u64, n_pages * self.pagesize as u64)?;
         Ok(())
     }
 }
@@ -109,7 +114,7 @@ mod tests {
     #[test]
     fn test_write_read_page() {
         let f = tempfile::NamedTempFile::new().unwrap();
-        let device = Device::new(f.path()).unwrap();
+        let device = Device::new(f.path(), 8192).unwrap();
 
         let mut page = Page {
             kv_pairs: HashMap::new(),
@@ -129,7 +134,7 @@ mod tests {
     #[test]
     fn test_read_page_ref() {
         let f = tempfile::NamedTempFile::new().unwrap();
-        let device = Device::new(f.path()).unwrap();
+        let device = Device::new(f.path(), 8192).unwrap();
 
         let mut page = Page {
             kv_pairs: HashMap::new(),

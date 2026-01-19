@@ -5,7 +5,7 @@ fn example() {
     let dir = tempfile::tempdir().unwrap();
     let ksize = 2;
     let vsize = 4;
-    let db = LinHash::open(dir.path(), ksize, vsize).unwrap();
+    let db = LinHash::open(dir.path(), ksize, vsize, 8192).unwrap();
 
     db.insert(vec![1, 2], vec![3, 4, 5, 6]).unwrap();
     let old = db.insert(vec![1, 2], vec![7, 8, 9, 10]).unwrap();

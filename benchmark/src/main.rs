@@ -27,7 +27,7 @@ fn main() {
         std::fs::create_dir("benchmark-dir").unwrap();
         std::path::Path::new("benchmark-dir")
     };
-    let db = LinHash::open(dir_path, args.ksize as usize, args.vsize as usize).unwrap();
+    let db = LinHash::open(dir_path, args.ksize as usize, args.vsize as usize, 4096).unwrap();
 
     let mut keys = HashSet::new();
 
