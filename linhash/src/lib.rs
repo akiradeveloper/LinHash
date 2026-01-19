@@ -317,16 +317,17 @@ impl LinHash {
                             chain_id
                         };
 
-                        op::Split {
+                        let resp = op::Split {
                             db: &core,
                             root,
                             chain_id,
                             lock: core.locks.selective_lock(chain_id.main_page_id),
                         }
-                        .exec()
-                        .unwrap();
+                        .exec();
 
-                        core.root.write().advance_split_pointer();
+                        if resp.is_ok() {
+                            core.root.write().advance_split_pointer();
+                        }
                     }
                 }
             }
