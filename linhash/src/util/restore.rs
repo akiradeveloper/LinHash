@@ -12,7 +12,7 @@ impl Restore<'_> {
             return Ok(0);
         }
 
-        let root = restore_root(n_primary_pages);
+        let root = calc_root(n_primary_pages);
 
         let next_overflow_id = {
             let travere_range = util::TraverseOverflowPages { db: self.db, root }.exec()?;
@@ -52,7 +52,7 @@ impl Restore<'_> {
     }
 }
 
-pub fn restore_root(n_primary_pages: u64) -> Root {
+pub fn calc_root(n_primary_pages: u64) -> Root {
     let bit_width = 64 - n_primary_pages.leading_zeros();
     let msb = 1 << (bit_width - 1);
     let next_split_id = n_primary_pages - msb;
@@ -75,13 +75,19 @@ mod tests {
     }
 
     #[test]
-    fn test_calc_base_level() {
-        assert_eq!(restore_root(2), root(0, 1));
-        assert_eq!(restore_root(3), root(1, 1));
-        assert_eq!(restore_root(4), root(0, 2));
-        assert_eq!(restore_root(5), root(1, 2));
-        assert_eq!(restore_root(6), root(2, 2));
-        assert_eq!(restore_root(7), root(3, 2));
-        assert_eq!(restore_root(8), root(0, 3));
+    fn test_calc_root() {
+        let tbl = [
+            (2, 0, 1),
+            (3, 1, 1),
+            (4, 0, 2),
+            (5, 1, 2),
+            (6, 2, 2),
+            (7, 3, 2),
+            (8, 0, 3),
+        ];
+
+        for (n_primary_pages, split_id, level) in tbl {
+            assert_eq!(calc_root(n_primary_pages), root(split_id, level));
+        }
     }
 }
