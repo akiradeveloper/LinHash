@@ -17,8 +17,8 @@ impl Get<'_> {
 
         let mut page = self
             .db
-            .main_pages
-            .read_page_ref(chain_id.main_page_id)?
+            .primary_pages
+            .read_page_ref(chain_id.primary_page_id)?
             .unwrap();
         hops += 1;
 

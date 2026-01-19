@@ -6,8 +6,8 @@ pub use restore::Restore;
 mod init;
 pub use init::Init;
 
-mod traverse_overflow;
-pub use traverse_overflow::TraverseOverflow;
+mod traverse_overflow_pages;
+pub use traverse_overflow_pages::TraverseOverflowPages;
 
-mod traverse_main;
-pub use traverse_main::TraverseMain;
+mod traverse_primary_pages;
+pub use traverse_primary_pages::TraversePrimaryPages;

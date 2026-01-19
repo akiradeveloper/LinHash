@@ -79,49 +79,49 @@ fn calc_max_kv_per_page(ksize: usize, vsize: usize) -> u16 {
 
 #[derive(Clone, Copy)]
 enum PageId {
-    Main(u64),
+    Primary(u64),
     Overflow(u64),
 }
 
 #[derive(Clone, Copy)]
 struct PageChainId {
-    main_page_id: u64,
+    primary_page_id: u64,
     locallevel: u8,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 struct Root {
     base_level: u8,
-    next_split_main_page_id: u64,
+    next_split_primary_page_id: u64,
 }
 
 impl Root {
     fn calc_n_pages(&self) -> u64 {
-        (1 << self.base_level) + self.next_split_main_page_id
+        (1 << self.base_level) + self.next_split_primary_page_id
     }
 
     fn calc_page_chain_id(&self, hash: u64) -> PageChainId {
         let b = hash & ((1 << self.base_level) - 1);
-        if b < self.next_split_main_page_id {
+        if b < self.next_split_primary_page_id {
             let b = hash & ((1 << (self.base_level + 1)) - 1);
             PageChainId {
-                main_page_id: b,
+                primary_page_id: b,
                 locallevel: self.base_level + 1,
             }
         } else {
             PageChainId {
-                main_page_id: b,
+                primary_page_id: b,
                 locallevel: self.base_level,
             }
         }
     }
 
-    // Only this function updates `next_split_main_page_id` and `main_base_level`.
+    // Only this function updates `next_split_primary_page_id` and `base_level`.
     fn advance_split_pointer(&mut self) {
-        self.next_split_main_page_id += 1;
-        if self.next_split_main_page_id == (1 << self.base_level) {
+        self.next_split_primary_page_id += 1;
+        if self.next_split_primary_page_id == (1 << self.base_level) {
             self.base_level += 1;
-            self.next_split_main_page_id = 0;
+            self.next_split_primary_page_id = 0;
         }
     }
 }
@@ -200,7 +200,7 @@ impl Statistics {
 }
 
 struct LinHashCore {
-    main_pages: Device,
+    primary_pages: Device,
 
     root: RwLock<Root>,
     locks: lock::StripeLock,
@@ -216,14 +216,14 @@ struct LinHashCore {
 
 impl LinHashCore {
     fn new(dir: &Path, ksize: usize, vsize: usize) -> Result<Self> {
-        let main_pages = Device::new(&dir.join("main"))?;
+        let primary_pages = Device::new(&dir.join("primary"))?;
         let overflow_pages = Device::new(&dir.join("overflow"))?;
 
         Ok(Self {
-            main_pages,
+            primary_pages,
             root: RwLock::new(Root {
                 base_level: 1,
-                next_split_main_page_id: 0,
+                next_split_primary_page_id: 0,
             }),
             locks: lock::StripeLock::new(1024),
 
@@ -240,10 +240,10 @@ impl LinHashCore {
     fn open(dir: &Path, ksize: usize, vsize: usize) -> Result<Self> {
         let mut db = Self::new(dir, ksize, vsize)?;
 
-        let n_main_pages = util::Restore { db: &mut db }.exec()?;
+        let n_primary_pages = util::Restore { db: &mut db }.exec()?;
 
-        // Invariant: there are at least two valid main pages.
-        if n_main_pages < 2 {
+        // Invariant: there are at least two valid primary pages.
+        if n_primary_pages < 2 {
             util::Init { db: &mut db }.exec()?;
             util::Restore { db: &mut db }.exec()?;
         }
@@ -264,8 +264,8 @@ impl LinHashCore {
     }
 
     fn load_factor(&self) -> f64 {
-        let n_main_pages = self.root.read().calc_n_pages();
-        let max_items = n_main_pages * self.max_kv_per_page as u64;
+        let n_primary_pages = self.root.read().calc_n_pages();
+        let max_items = n_primary_pages * self.max_kv_per_page as u64;
         self.n_items.load(Ordering::SeqCst) as f64 / max_items as f64
     }
 }
@@ -311,9 +311,9 @@ impl LinHash {
                         let root = core.root.read();
 
                         let chain_id = {
-                            let split_id = root.next_split_main_page_id;
+                            let split_id = root.next_split_primary_page_id;
                             let chain_id = root.calc_page_chain_id(split_id);
-                            assert_eq!(chain_id.main_page_id, split_id);
+                            assert_eq!(chain_id.primary_page_id, split_id);
                             chain_id
                         };
 
@@ -321,7 +321,7 @@ impl LinHash {
                             db: &core,
                             root,
                             chain_id,
-                            lock: core.locks.selective_lock(chain_id.main_page_id),
+                            lock: core.locks.selective_lock(chain_id.primary_page_id),
                         }
                         .exec();
 
@@ -353,7 +353,7 @@ impl LinHash {
                 db: &self.core,
                 chain_id,
                 root,
-                lock: self.core.locks.read_lock(chain_id.main_page_id),
+                lock: self.core.locks.read_lock(chain_id.primary_page_id),
             }
             .exec(key);
 
@@ -382,7 +382,7 @@ impl LinHash {
                 db: &self.core,
                 chain_id,
                 root,
-                lock: self.core.locks.selective_lock(chain_id.main_page_id),
+                lock: self.core.locks.selective_lock(chain_id.primary_page_id),
             }
             .exec(key.clone(), value.clone());
 
@@ -413,7 +413,7 @@ impl LinHash {
                 db: &self.core,
                 chain_id,
                 root,
-                lock: self.core.locks.exclusive_lock(chain_id.main_page_id),
+                lock: self.core.locks.exclusive_lock(chain_id.primary_page_id),
             }
             .exec(key);
 
@@ -436,7 +436,7 @@ impl LinHash {
 
     pub fn flush(&self) -> Result<()> {
         self.core.overflow_pages.flush()?;
-        self.core.main_pages.flush()?;
+        self.core.primary_pages.flush()?;
         Ok(())
     }
 

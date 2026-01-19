@@ -18,8 +18,8 @@ impl List<'_> {
             let mut page_id = 0;
 
             loop {
-                // Stop if valid main page does not exist.
-                let Ok(Some(page)) = self.db.main_pages.read_page_ref(page_id) else {
+                // Stop if valid primary page does not exist.
+                let Ok(Some(page)) = self.db.primary_pages.read_page_ref(page_id) else {
                     return;
                 };
 

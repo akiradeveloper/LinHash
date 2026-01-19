@@ -6,19 +6,19 @@ pub struct OverflowRange {
     pub end: u64,
 }
 
-/// Traverse all main pages and find the range of overflow pages used.
-pub struct TraverseOverflow<'a> {
+/// Traverse all primary pages and find the range of overflow pages used.
+pub struct TraverseOverflowPages<'a> {
     pub db: &'a LinHashCore,
     pub root: Root,
 }
 
-impl TraverseOverflow<'_> {
+impl TraverseOverflowPages<'_> {
     pub fn exec(self) -> Result<OverflowRange> {
         let mut min = u64::MAX;
         let mut max = 0;
 
         for page_id in 0..self.root.calc_n_pages() {
-            let page = self.db.main_pages.read_page_ref(page_id)?.unwrap();
+            let page = self.db.primary_pages.read_page_ref(page_id)?.unwrap();
 
             let mut cur_page = page;
             loop {

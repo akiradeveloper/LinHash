@@ -16,10 +16,10 @@ impl Insert<'_> {
         let mut pages = VecDeque::new();
 
         let next_page = (
-            PageId::Main(chain_id.main_page_id),
+            PageId::Primary(chain_id.primary_page_id),
             self.db
-                .main_pages
-                .read_page(chain_id.main_page_id)?
+                .primary_pages
+                .read_page(chain_id.primary_page_id)?
                 .unwrap(),
         );
 
@@ -35,7 +35,7 @@ impl Insert<'_> {
             if cur_page.1.contains(&key) {
                 let old = cur_page.1.insert(key, value);
                 match cur_page.0 {
-                    PageId::Main(b) => self.db.main_pages.write_page(b, &cur_page.1)?,
+                    PageId::Primary(b) => self.db.primary_pages.write_page(b, &cur_page.1)?,
                     PageId::Overflow(id) => self.db.overflow_pages.write_page(id, &cur_page.1)?,
                 }
                 return Ok(old);
@@ -56,7 +56,7 @@ impl Insert<'_> {
             if cur_page.1.kv_pairs.len() < self.db.max_kv_per_page as usize {
                 cur_page.1.insert(key, value);
                 match cur_page.0 {
-                    PageId::Main(b) => self.db.main_pages.write_page(b, &cur_page.1)?,
+                    PageId::Primary(b) => self.db.primary_pages.write_page(b, &cur_page.1)?,
                     PageId::Overflow(id) => self.db.overflow_pages.write_page(id, &cur_page.1)?,
                 }
                 return Ok(None);
@@ -79,8 +79,8 @@ impl Insert<'_> {
         // After writing the new overflow page, update the old tail page.
         tail_page.1.overflow_id = Some(new_overflow_id);
         match tail_page.0 {
-            PageId::Main(b) => {
-                self.db.main_pages.write_page(b, &tail_page.1)?;
+            PageId::Primary(b) => {
+                self.db.primary_pages.write_page(b, &tail_page.1)?;
             }
             PageId::Overflow(id) => {
                 self.db.overflow_pages.write_page(id, &tail_page.1)?;

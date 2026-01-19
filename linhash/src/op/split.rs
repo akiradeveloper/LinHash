@@ -10,22 +10,22 @@ pub struct Split<'a> {
 }
 
 impl Split<'_> {
-    /// Split the main page at `next_split_id` into two main pages.
+    /// Split the primary page at `next_split_id` into two primary pages.
     pub fn exec(self) -> Result<()> {
         let kv_pairs = self.collect_rehash_kv_pairs()?;
         let page_chains = self.insert_kv_pairs_into_pages(kv_pairs);
 
-        // Write from bigger main page id (new one) to avoid losing pairs on crash.
+        // Write from bigger primary page id (new one) to avoid losing pairs on crash.
         for (_, page_chain) in page_chains.into_iter().rev() {
             // Write from overflow pages.
             for (page_id, page) in page_chain.into_iter().rev() {
                 match page_id {
-                    PageId::Main(id) => {
-                        // Before commiting the main page, ensure that overflow pages is persisted.
+                    PageId::Primary(id) => {
+                        // Before commiting the primary page, ensure that overflow pages is persisted.
                         // Since split is rare, performance impact by sync call is small.
                         self.db.overflow_pages.flush()?;
-                        self.db.main_pages.write_page(id, &page)?;
-                        // We don't need to sync the main page because losing the main page doesn't affect consistency.
+                        self.db.primary_pages.write_page(id, &page)?;
+                        // We don't need to sync the primary page because losing the primary page doesn't affect consistency.
                     }
                     PageId::Overflow(id) => {
                         self.db.overflow_pages.write_page(id, &page)?;
@@ -37,13 +37,13 @@ impl Split<'_> {
         Ok(())
     }
 
-    // Collect all the kv-pairs which is reachable from the main page at `next_split_id`.
+    // Collect all the kv-pairs which is reachable from the primary page at `next_split_id`.
     fn collect_rehash_kv_pairs(&self) -> Result<Vec<(Vec<u8>, Vec<u8>)>> {
-        let split_id = self.chain_id.main_page_id;
+        let split_id = self.chain_id.primary_page_id;
 
         let mut out: Vec<(Vec<u8>, Vec<u8>)> = Vec::new();
 
-        let mut cur_page = self.db.main_pages.read_page(split_id)?.unwrap();
+        let mut cur_page = self.db.primary_pages.read_page(split_id)?.unwrap();
         loop {
             for (k, v) in cur_page.kv_pairs {
                 out.push((k, v));
@@ -66,18 +66,18 @@ impl Split<'_> {
         &self,
         kv_pairs: Vec<(Vec<u8>, Vec<u8>)>,
     ) -> BTreeMap<u64, VecDeque<(PageId, Page)>> {
-        let split_id = self.chain_id.main_page_id;
+        let split_id = self.chain_id.primary_page_id;
         let cur_level = self.chain_id.locallevel;
 
         let mut page_chains = BTreeMap::new();
         let new_split_id = split_id + (1 << cur_level);
         page_chains.insert(split_id, VecDeque::new());
         page_chains.insert(new_split_id, VecDeque::new());
-        for (&main_page_id, page_chain) in &mut page_chains {
+        for (&primary_page_id, page_chain) in &mut page_chains {
             let mut page = Page::new();
             page.locallevel = Some(cur_level + 1);
 
-            page_chain.push_back((PageId::Main(main_page_id), page));
+            page_chain.push_back((PageId::Primary(primary_page_id), page));
         }
 
         for (k, v) in kv_pairs {
