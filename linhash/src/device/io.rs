@@ -34,7 +34,7 @@ impl IO {
         flags.insert(atomic_flag);
 
         let io_vec = [rustix::io::IoSlice::new(buf.as_slice())];
-        pwritev2(&self.fd, &io_vec, offset, ReadWriteFlags::empty())?;
+        pwritev2(&self.fd, &io_vec, offset, flags)?;
 
         Ok(())
     }
