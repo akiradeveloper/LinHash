@@ -17,16 +17,16 @@ impl Device {
 
     fn into_data(page: &Page) -> PageIOBuffer {
         let data = encode_page(&page);
-        assert!(data.len() <= 4064);
+        assert!(data.len() <= 4096 - HEADER_LEN);
 
         let crc = crc32fast::hash(&data);
         let data_len = data.len() as u32;
 
         let mut out = PageIOBuffer::with_capacity(4096);
-        out.extend_from_slice(&MAGIC.to_le_bytes());
-        out.extend_from_slice(&crc.to_le_bytes());
-        out.extend_from_slice(&data_len.to_le_bytes());
-        out.extend_from_slice(&[0; 20]); // Padding
+        out.extend_from_slice(&MAGIC.to_le_bytes()); // 4
+        out.extend_from_slice(&crc.to_le_bytes()); // 4
+        out.extend_from_slice(&data_len.to_le_bytes()); // 4
+        out.extend_from_slice(&[0; HEADER_LEN - 12]); // Padding
         out.extend_from_slice(&data);
         out.resize(4096, 0);
 
