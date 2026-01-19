@@ -219,6 +219,8 @@ impl LinHashCore {
         let primary_pages = Device::new(&dir.join("primary"), pagesize)?;
         let overflow_pages = Device::new(&dir.join("overflow"), pagesize)?;
 
+        util::statx::print_atomic_support(&dir.join("primary"))?;
+
         Ok(Self {
             primary_pages,
             root: RwLock::new(Root {
