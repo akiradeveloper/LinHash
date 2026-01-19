@@ -6,8 +6,14 @@ fn vec(i: u64) -> Vec<u8> {
 
 #[test]
 fn test_restore() {
+    for pagesize in [4096, 16384, 65536] {
+        do_test_restore(pagesize);
+    }
+}
+
+fn do_test_restore(pagesize: usize) {
     let dir = tempfile::tempdir().unwrap();
-    let db = LinHash::open(dir.path(), 8, 8).unwrap();
+    let db = LinHash::open(dir.path(), 8, 8, pagesize).unwrap();
 
     let n = 10000;
 
@@ -16,7 +22,7 @@ fn test_restore() {
     }
     drop(db);
 
-    let db = LinHash::open(dir.path(), 8, 8).unwrap();
+    let db = LinHash::open(dir.path(), 8, 8, pagesize).unwrap();
 
     assert_eq!(db.len(), n as u64);
 

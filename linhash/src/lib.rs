@@ -215,9 +215,9 @@ struct LinHashCore {
 }
 
 impl LinHashCore {
-    fn new(dir: &Path, ksize: usize, vsize: usize) -> Result<Self> {
-        let primary_pages = Device::new(&dir.join("primary"))?;
-        let overflow_pages = Device::new(&dir.join("overflow"))?;
+    fn new(dir: &Path, ksize: usize, vsize: usize, pagesize: usize) -> Result<Self> {
+        let primary_pages = Device::new(&dir.join("primary"), pagesize)?;
+        let overflow_pages = Device::new(&dir.join("overflow"), pagesize)?;
 
         Ok(Self {
             primary_pages,
@@ -237,8 +237,8 @@ impl LinHashCore {
         })
     }
 
-    fn open(dir: &Path, ksize: usize, vsize: usize) -> Result<Self> {
-        let mut db = Self::new(dir, ksize, vsize)?;
+    fn open(dir: &Path, ksize: usize, vsize: usize, pagesize: usize) -> Result<Self> {
+        let mut db = Self::new(dir, ksize, vsize, pagesize)?;
 
         let n_primary_pages = util::Restore { db: &mut db }.exec()?;
 
@@ -278,8 +278,8 @@ pub struct LinHash {
 }
 
 impl LinHash {
-    pub fn open(dir: &Path, ksize: usize, vsize: usize) -> Result<Self> {
-        let core = LinHashCore::open(dir, ksize, vsize)?;
+    pub fn open(dir: &Path, ksize: usize, vsize: usize, pagesize: usize) -> Result<Self> {
+        let core = LinHashCore::open(dir, ksize, vsize, pagesize)?;
         let core = Arc::new(core);
 
         let mut spawn_handles = vec![];

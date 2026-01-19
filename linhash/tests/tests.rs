@@ -7,13 +7,13 @@ fn vec(i: u64) -> Vec<u8> {
 #[test]
 fn test_open() {
     let dir = tempfile::tempdir().unwrap();
-    let _db = LinHash::open(dir.path(), 1, 1).unwrap();
+    let _db = LinHash::open(dir.path(), 1, 1, 8192).unwrap();
 }
 
 #[test]
 fn test_insert() {
     let dir = tempfile::tempdir().unwrap();
-    let db = LinHash::open(dir.path(), 8, 8).unwrap();
+    let db = LinHash::open(dir.path(), 8, 8, 8192).unwrap();
 
     let n = 10000;
 
@@ -27,7 +27,7 @@ fn test_insert() {
 #[test]
 fn test_get() {
     let dir = tempfile::tempdir().unwrap();
-    let db = LinHash::open(dir.path(), 8, 8).unwrap();
+    let db = LinHash::open(dir.path(), 8, 8, 8192).unwrap();
 
     let n = 10000;
 
@@ -46,7 +46,7 @@ fn test_get() {
 #[test]
 fn test_list() {
     let dir = tempfile::tempdir().unwrap();
-    let db = LinHash::open(dir.path(), 8, 8).unwrap();
+    let db = LinHash::open(dir.path(), 8, 8, 8192).unwrap();
 
     let n = 10000;
 
@@ -71,7 +71,7 @@ fn test_list() {
 #[test]
 fn test_list_after_every_insert() {
     let dir = tempfile::tempdir().unwrap();
-    let db = LinHash::open(dir.path(), 8, 8).unwrap();
+    let db = LinHash::open(dir.path(), 8, 8, 8192).unwrap();
 
     let n = 2000;
 
@@ -97,7 +97,7 @@ fn test_list_after_every_insert() {
 #[test]
 fn test_list_after_delete() {
     let dir = tempfile::tempdir().unwrap();
-    let db = LinHash::open(dir.path(), 8, 8).unwrap();
+    let db = LinHash::open(dir.path(), 8, 8, 8192).unwrap();
 
     let n = 10000;
 
@@ -130,7 +130,7 @@ fn test_list_after_delete() {
 #[test]
 fn test_update() {
     let dir = tempfile::tempdir().unwrap();
-    let db = LinHash::open(dir.path(), 8, 8).unwrap();
+    let db = LinHash::open(dir.path(), 8, 8, 8192).unwrap();
 
     let n = 10000;
 
@@ -153,7 +153,7 @@ fn test_update() {
 #[test]
 fn test_delete() {
     let dir = tempfile::tempdir().unwrap();
-    let db = LinHash::open(dir.path(), 8, 8).unwrap();
+    let db = LinHash::open(dir.path(), 8, 8, 8192).unwrap();
 
     let n = 10000;
 
@@ -177,7 +177,7 @@ fn test_delete() {
 #[test]
 fn test_insert_half_delete_get() {
     let dir = tempfile::tempdir().unwrap();
-    let db = LinHash::open(dir.path(), 8, 8).unwrap();
+    let db = LinHash::open(dir.path(), 8, 8, 8192).unwrap();
 
     let n = 10000;
 
@@ -204,7 +204,7 @@ fn test_insert_half_delete_get() {
 #[test]
 fn test_insert_half_delete_update() {
     let dir = tempfile::tempdir().unwrap();
-    let db = LinHash::open(dir.path(), 8, 8).unwrap();
+    let db = LinHash::open(dir.path(), 8, 8, 8192).unwrap();
 
     let n = 10000;
 

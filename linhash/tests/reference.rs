@@ -3,8 +3,14 @@ use map_test_generator::*;
 
 #[test]
 fn reference_test() {
+    for pagesize in [4096, 16384, 65536] {
+        do_reference_test(pagesize);
+    }
+}
+
+fn do_reference_test(pagesize: usize) {
     let dir = tempfile::tempdir().unwrap();
-    let db = LinHash::open(dir.path(), 32, 16).unwrap();
+    let db = LinHash::open(dir.path(), 32, 16, pagesize).unwrap();
 
     let mut m = std::collections::HashMap::new();
 
@@ -56,7 +62,7 @@ fn reference_test() {
                 // FIXME fails!!!
 
                 // For debugging.
-                db.stat().show();
+                // db.stat().show();
                 assert_eq!(list1.len(), list2.len());
                 assert_eq!(list1, list2);
             }
