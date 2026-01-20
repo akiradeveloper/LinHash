@@ -14,7 +14,7 @@ keywords = ["linear-hashing", "hash-table", "hashmap"]
 crc32fast = "1.5"
 crossbeam = "0.8"
 genawaiter = "0.99.1"
-libc = "0.2.180"
+libc = { version = "0.2.180", optional = true }
 parking_lot = "0.12"
 rkyv = "0.8"
 rustix = { version = "1.1", features = ["fs"] }
@@ -30,4 +30,4 @@ map-test-generator = { path = "../map-test-generator" }
 [features]
 default = ["hash"]
 hash = ["dep:xxhash-rust"]
-atomic-write = []
+atomic-write = ["dep:libc"]
