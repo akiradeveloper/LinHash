@@ -80,4 +80,4 @@ assert_eq!(db.get(&vec![1, 2]).unwrap(), None);
 | flag | default | description |
 | -- | -- | -- |
 | hash | on | Enabled → Hash function is used to calculate hash from key. Disabled → 64 bit from the given key is taken as a hash, eliminating the cost of hashing. |
-| atomic-write | off | Enabled → writes are atomic using RWF_ATOMIC. Disabled → crash tolerance is not guaranteed but high speed. |
+| atomic-write | off | Enabled → writes are atomic using RWF_ATOMIC. Disabled → crash tolerance is not guaranteed. |
