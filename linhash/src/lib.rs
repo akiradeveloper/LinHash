@@ -12,7 +12,7 @@ pub use error::Error;
 use error::Result;
 
 mod device;
-use device::Device;
+use device::{Device, IO};
 mod op;
 mod util;
 
@@ -215,11 +215,9 @@ struct LinHashCore {
 }
 
 impl LinHashCore {
-    fn new(dir: &Path, ksize: usize, vsize: usize, pagesize: usize) -> Result<Self> {
-        let primary_pages = Device::new(&dir.join("primary"), pagesize)?;
-        let overflow_pages = Device::new(&dir.join("overflow"), pagesize)?;
-
-        util::statx::print_atomic_support(&dir.join("primary"))?;
+    fn new(dir: &Path, ksize: usize, vsize: usize, pagesize: usize, atomic: bool) -> Result<Self> {
+        let primary_pages = Device::open(&dir.join("primary"), pagesize)?;
+        let overflow_pages = Device::open(&dir.join("overflow"), pagesize)?;
 
         Ok(Self {
             primary_pages,
@@ -239,8 +237,12 @@ impl LinHashCore {
         })
     }
 
-    fn open(dir: &Path, ksize: usize, vsize: usize, pagesize: usize) -> Result<Self> {
-        let mut db = Self::new(dir, ksize, vsize, pagesize)?;
+    fn open(dir: &Path, ksize: usize, vsize: usize, pagesize: usize, atomic: bool) -> Result<Self> {
+        let testfile = dir.join("test");
+        IO::open(&testfile)?;
+        let atomic_supp = util::statx::print_atomic_support(&dir.join("test"))?;
+
+        let mut db = Self::new(dir, ksize, vsize, pagesize, atomic)?;
 
         let n_primary_pages = util::Restore { db: &mut db }.exec()?;
 

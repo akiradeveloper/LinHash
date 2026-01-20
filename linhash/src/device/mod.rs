@@ -1,7 +1,7 @@
 use super::*;
 
 mod io;
-use io::IO;
+pub use io::IO;
 
 const MAGIC: u32 = 0x4c6e4861; // LnHa
 const HEADER_LEN: usize = 32;
@@ -12,9 +12,9 @@ pub struct Device {
 }
 
 impl Device {
-    pub fn new(path: &Path, pagesize: usize) -> Result<Self> {
+    pub fn open(path: &Path, pagesize: usize) -> Result<Self> {
         Ok(Self {
-            io: IO::new(path)?,
+            io: IO::open(path)?,
             pagesize,
         })
     }
@@ -114,7 +114,7 @@ mod tests {
     #[test]
     fn test_write_read_page() {
         let f = tempfile::NamedTempFile::new().unwrap();
-        let device = Device::new(f.path(), 8192).unwrap();
+        let device = Device::open(f.path(), 8192).unwrap();
 
         let mut page = Page {
             kv_pairs: HashMap::new(),
@@ -134,7 +134,7 @@ mod tests {
     #[test]
     fn test_read_page_ref() {
         let f = tempfile::NamedTempFile::new().unwrap();
-        let device = Device::new(f.path(), 8192).unwrap();
+        let device = Device::open(f.path(), 8192).unwrap();
 
         let mut page = Page {
             kv_pairs: HashMap::new(),

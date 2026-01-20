@@ -10,12 +10,13 @@ pub struct IO {
 }
 
 impl IO {
-    pub fn new(p: &Path) -> Result<Self> {
+    pub fn open(p: &Path) -> Result<Self> {
         let fd = open(
             p,
             OFlags::RDWR | OFlags::CREATE | OFlags::DIRECT,
             Mode::from_bits_truncate(0o600),
         )?;
+        fallocate(&fd, FallocateFlags::empty(), 0, 1<<20)?;
 
         Ok(Self { fd })
     }
@@ -62,7 +63,7 @@ mod tests {
     #[test]
     fn test_io_read_write() {
         let f = tempfile::NamedTempFile::new().unwrap();
-        let io = IO::new(f.path()).unwrap();
+        let io = IO::open(f.path()).unwrap();
 
         let mut write_buf = PageIOBuffer::new();
         write_buf.resize(4096, 1);
