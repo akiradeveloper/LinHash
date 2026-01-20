@@ -11,12 +11,8 @@ pub struct IO {
 
 impl IO {
     pub fn new(p: &Path) -> Result<Self> {
-        let fd = open(
-            p,
-            OFlags::RDWR | OFlags::CREATE | OFlags::DIRECT,
-            Mode::from_bits_truncate(0o600),
-        )?;
-
+        let flags = OFlags::RDWR | OFlags::CREATE | OFlags::DIRECT;
+        let fd = open(p, flags, Mode::from_bits_truncate(0o600))?;
         Ok(Self { fd })
     }
 
@@ -28,10 +24,13 @@ impl IO {
     }
 
     pub fn write(&self, buf: &PageIOBuffer, offset: u64) -> Result<()> {
-        let atomic_flag = ReadWriteFlags::from_bits_retain(libc::RWF_ATOMIC as u32);
-
         let mut flags = ReadWriteFlags::empty();
-        flags.insert(atomic_flag);
+
+        #[cfg(feature = "atomic-write")]
+        {
+            let atomic_flag = ReadWriteFlags::from_bits_retain(libc::RWF_ATOMIC as u32);
+            flags.insert(atomic_flag);
+        }
 
         let io_vec = [rustix::io::IoSlice::new(buf.as_slice())];
         pwritev2(&self.fd, &io_vec, offset, flags)?;

@@ -29,3 +29,4 @@ map-test-generator = { path = "../map-test-generator" }
 [features]
 default = ["hash"]
 hash = ["dep:xxhash-rust"]
+atomic-write = []
