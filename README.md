@@ -52,12 +52,17 @@ This is **type-checked** by Rust compiler.
 The API is as same as `HashMap`.
 
 ```rust
-use linhash::LinHash;
+use linhash::{LinHash, LinHashConfig};
 
 let dir = tempfile::tempdir().unwrap();
 let ksize = 2;
 let vsize = 4;
-let db = LinHash::open(dir.path(), ksize, vsize).unwrap();
+let config = LinHashConfig::builder()
+    .ksize(ksize)
+    .vsize(vsize)
+    .pagesize(8192)
+    .build();
+let db = LinHash::open(dir.path(), config).unwrap();
 
 db.insert(vec![1, 2], vec![3, 4, 5, 6]).unwrap();
 let old = db.insert(vec![1, 2], vec![7, 8, 9, 10]).unwrap();
