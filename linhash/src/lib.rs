@@ -270,6 +270,14 @@ impl LinHashCore {
     }
 }
 
+#[derive(typed_builder::TypedBuilder, Clone)]
+pub struct LinHashConfig {
+    pub ksize: usize,
+    pub vsize: usize,
+    #[builder(default = 4096)]
+    pub pagesize: usize,
+}
+
 pub struct LinHash {
     core: Arc<LinHashCore>,
     gc_shutdown_tx: Option<crossbeam::channel::Sender<()>>,
@@ -278,8 +286,8 @@ pub struct LinHash {
 }
 
 impl LinHash {
-    pub fn open(dir: &Path, ksize: usize, vsize: usize, pagesize: usize) -> Result<Self> {
-        let core = LinHashCore::open(dir, ksize, vsize, pagesize)?;
+    pub fn open(dir: &Path, settings: LinHashConfig) -> Result<Self> {
+        let core = LinHashCore::open(dir, settings.ksize, settings.vsize, settings.pagesize)?;
         let core = Arc::new(core);
 
         let mut spawn_handles = vec![];

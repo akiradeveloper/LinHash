@@ -10,7 +10,12 @@ fn reference_test() {
 
 fn do_reference_test(pagesize: usize) {
     let dir = tempfile::tempdir().unwrap();
-    let db = LinHash::open(dir.path(), 32, 16, pagesize).unwrap();
+    let config = LinHashConfig::builder()
+        .ksize(32)
+        .vsize(16)
+        .pagesize(pagesize)
+        .build();
+    let db = LinHash::open(dir.path(), config).unwrap();
 
     let mut m = std::collections::HashMap::new();
 

@@ -9,7 +9,12 @@ fn vec(i: u64) -> Vec<u8> {
 #[test]
 fn test_parallel_insert_get() {
     let dir = tempfile::tempdir().unwrap();
-    let db = Arc::new(LinHash::open(dir.path(), 8, 8, 8192).unwrap());
+    let config = LinHashConfig::builder()
+        .ksize(8)
+        .vsize(8)
+        .pagesize(8192)
+        .build();
+    let db = Arc::new(LinHash::open(dir.path(), config).unwrap());
 
     let mut handles = vec![];
     for i in 0..5000 {
@@ -36,7 +41,12 @@ fn test_parallel_insert_get() {
 #[test]
 fn test_parallel_insert_delete_get() {
     let dir = tempfile::tempdir().unwrap();
-    let db = Arc::new(LinHash::open(dir.path(), 8, 8, 8192).unwrap());
+    let config = LinHashConfig::builder()
+        .ksize(8)
+        .vsize(8)
+        .pagesize(8192)
+        .build();
+    let db = Arc::new(LinHash::open(dir.path(), config).unwrap());
 
     let mut handles = vec![];
     for i in 0..5000 {

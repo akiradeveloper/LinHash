@@ -13,7 +13,12 @@ fn test_restore() {
 
 fn do_test_restore(pagesize: usize) {
     let dir = tempfile::tempdir().unwrap();
-    let db = LinHash::open(dir.path(), 8, 8, pagesize).unwrap();
+    let config = LinHashConfig::builder()
+        .ksize(8)
+        .vsize(8)
+        .pagesize(pagesize)
+        .build();
+    let db = LinHash::open(dir.path(), config.clone()).unwrap();
 
     let n = 10000;
 
@@ -22,7 +27,7 @@ fn do_test_restore(pagesize: usize) {
     }
     drop(db);
 
-    let db = LinHash::open(dir.path(), 8, 8, pagesize).unwrap();
+    let db = LinHash::open(dir.path(), config).unwrap();
 
     assert_eq!(db.len(), n as u64);
 

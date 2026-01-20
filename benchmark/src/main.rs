@@ -27,7 +27,12 @@ fn main() {
         std::fs::create_dir("benchmark-dir").unwrap();
         std::path::Path::new("benchmark-dir")
     };
-    let db = LinHash::open(dir_path, args.ksize as usize, args.vsize as usize, 4096).unwrap();
+    let config = LinHashConfig::builder()
+        .ksize(args.ksize as usize)
+        .vsize(args.vsize as usize)
+        .pagesize(4096)
+        .build();
+    let db = LinHash::open(dir_path, config).unwrap();
 
     let mut keys = HashSet::new();
 
